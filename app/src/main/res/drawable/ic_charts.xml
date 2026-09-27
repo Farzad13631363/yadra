@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- خط پایه -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M7,39h34v3H7z" />
+
+    <!-- ستون اول -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M10,34V25h6v9z" />
+
+    <!-- ستون دوم -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M21,34V18h6v16z" />
+
+    <!-- ستون سوم -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M32,34V10h6v24z" />
+
+</vector>

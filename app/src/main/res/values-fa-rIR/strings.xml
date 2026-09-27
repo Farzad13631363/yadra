@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App -->
+    <string name="app_name">یادرا</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard">داشبورد</string>
+    <string name="sensors">اطلاعات سنسورها</string>
+    <string name="charts">نمودارها</string>
+    <string name="error_codes">کد خطاها</string>
+    <string name="warning_lights">چراغ‌های اخطار</string>
+    <string name="ai">هوش مصنوعی</string>
+    <string name="support">پشتیبانی</string>
+    <string name="periodic_service">سرویس دوره‌ای</string>
+    <string name="trip">سفر</string>
+    <string name="subscription">اشتراک</string>
+    <string name="settings">تنظیمات</string>
+
+    <!-- Vehicle -->
+    <string name="vehicle">خودرو</string>
+    <string name="connected">متصل</string>
+    <string name="disconnected">قطع اتصال</string>
+
+    <!-- Settings -->
+    <string name="language">زبان</string>
+    <string name="theme">تم برنامه</string>
+    <string name="system">سیستم</string>
+    <string name="light">روشن</string>
+    <string name="dark">تاریک</string>
+    <string name="font_type">نوع فونت</string>
+    <string name="font_size">اندازه فونت</string>
+    <string name="font_size_small">کوچک</string>
+    <string name="font_size_medium">متوسط</string>
+    <string name="font_size_large">بزرگ</string>
+    <string name="font_size_extra_large">خیلی بزرگ</string>
+
+    <!-- Wi-Fi -->
+    <string name="wifi_scan_title">اسکن Wi-Fi</string>
+    <string name="wifi_scan_status">در حال جستجوی شبکه‌ها…</string>
+    <string name="wifi_networks_found">شبکه‌های پیدا شده</string>
+    <string name="wifi_scan_again">اسکن مجدد</string>
+    <string name="wifi_networks_count">%1$d شبکه پیدا شد</string>
+    <string name="wifi_network_item">📶  %1$s\n   قدرت سیگنال: %2$s</string>
+    <string name="wifi_selected">%1$s انتخاب شد</string>
+
+    <string name="wifi_disconnected">🔴 Wi-Fi: قطع است</string>
+    <string name="wifi_disabled">⚠️ Wi-Fi خاموش است.</string>
+    <string name="wifi_scanning">🔄 در حال جستجوی شبکه‌های Wi-Fi…</string>
+    <string name="wifi_permission_required">❌ مجوز Wi-Fi لازم است</string>
+    <string name="wifi_permission_denied">❌ مجوز Wi-Fi رد شد</string>
+    <string name="wifi_no_networks">❌ هیچ شبکه Wi-Fi پیدا نشد</string>
+    <string name="wifi_networks_found_count">%1$d شبکه Wi-Fi پیدا شد</string>
+    <string name="wifi_scan_failed">❌ جستجو ناموفق بود: %1$s</string>
+    <string name="wifi_read_failed">❌ خواندن شبکه‌های Wi-Fi ناموفق بود: %1$s</string>
+
+    <string name="wifi_target_item">🚗  %1$s\n   قدرت سیگنال: %2$s\n   آداپتور Wi-Fi نوع ELM327</string>
+
+    <string name="wifi_connecting">🔄 در حال اتصال به %1$s…</string>
+    <string name="wifi_connected">🟢 Wi-Fi: متصل\nSSID: %1$s</string>
+    <string name="wifi_connection_failed">🔴 اتصال Wi-Fi ناموفق بود</string>
+    <string name="wifi_connection_failed_detail">❌ اتصال Wi-Fi ناموفق بود: %1$s</string>
+    <string name="wifi_configure_failed">❌ پیکربندی WIFI_OBDII انجام نشد</string>
+    <string name="wifi_enable_failed">❌ فعال‌سازی WIFI_OBDII انجام نشد</string>
+    <string name="wifi_connection_timeout">🔴 زمان اتصال Wi-Fi تمام شد</string>
+
+    <!-- Wi-Fi connection errors -->
+    <string name="wifi_initialization_error">❌ راه‌اندازی Wi-Fi ناموفق بود: %1$s</string>
+    <string name="wifi_location_disabled">⚠️ سرویس مکان‌یابی غیرفعال است.</string>
+    <string name="wifi_normal_item">📶  %1$s\n   قدرت سیگنال: %2$s</string>
+    <string name="wifi_network_not_ready">⚠️ شبکه Wi-Fi آماده نیست.</string>
+    <string name="wifi_cellular_unavailable">❌ اینترنت تلفن همراه در دسترس نیست.</string>
+    <string name="wifi_network_not_found">❌ شبکه WIFI_OBDII پیدا نشد.</string>
+
+    <!-- ELM327 / ECU -->
+    <string name="elm327_disconnected">🟢 Wi-Fi: متصل\n🔴 ELM327: قطع\n192.168.0.10:35000</string>
+
+    <string name="elm327_initializing">🟢 Wi-Fi: متصل\n🟢 ELM327: متصل\nدر حال راه‌اندازی…</string>
+
+    <string name="elm327_initialization_failed">🟢 Wi-Fi: متصل\n🟢 ELM327: متصل\n⚠️ راه‌اندازی ناموفق بود: %1$s</string>
+
+    <string name="ecu_disconnected">🟢 Wi-Fi: متصل\n🟢 ELM327: متصل\n🔴 ECU: قطع\nECU به دستور 0100 پاسخ نداد</string>
+
+    <string name="elm327_connecting">🔄 در حال اتصال به ELM327…</string>
+    <string name="elm327_connection_failed">🔴 اتصال به ELM327 ناموفق بود: %1$s</string>
+    <string name="elm327_error">❌ خطای ELM327: %1$s</string>
+
+    <string name="ecu_connected">🟢 ECU: متصل</string>
+    <string name="ecu_not_detected">🔴 ECU شناسایی نشد</string>
+
+    <string name="full_wifi_connected">🟢 Wi-Fi: متصل</string>
+    <string name="full_elm_connected">🟢 ELM327: متصل</string>
+    <string name="full_ecu_connected">🟢 ECU: متصل</string>
+
+    <string name="full_elm_version">ELM327: %1$s</string>
+    <string name="full_protocol">پروتکل: %1$s</string>
+    <string name="full_rpm">دور موتور: %1$d</string>
+    <string name="full_rpm_unavailable">دور موتور در دسترس نیست</string>
+
+    <!-- Errors -->
+    <string name="errors_ready">آماده بررسی خطاهای خودرو</string>
+    <string name="read_errors">🔍 شناسایی خطاها</string>
+    <string name="clear_errors">🗑 پاک کردن خطاها</string>
+    <string name="no_errors">هنوز خطایی خوانده نشده است</string>
+
+    <string name="connecting_elm327">در حال اتصال به ELM327…</string>
+    <string name="connection_failed">❌ اتصال به ELM327 برقرار نشد</string>
+    <string name="elm_no_response">❌ پاسخی از ELM327 دریافت نشد</string>
+    <string name="elm_connected">🟢 اتصال برقرار است</string>
+
+    <string name="clearing_errors">در حال پاک کردن خطاها…</string>
+    <string name="clear_command_sent">🟢 فرمان پاک کردن خطا ارسال شد</string>
+    <string name="no_registered_errors">خطایی ثبت نشده است</string>
+
+    <!-- Error Information -->
+    <string name="error_code_title">کد خطا</string>
+    <string name="error_type_powertrain">موتور و قوای محرکه</string>
+    <string name="error_type_body">بدنه</string>
+    <string name="error_type_chassis">شاسی</string>
+    <string name="error_type_network">شبکه ارتباطی</string>
+    <string name="unknown_error_code">کد خطای ناشناخته</string>
+
+    <string name="error_code_label">کد خطا</string>
+    <string name="error_type_label">نوع</string>
+    <string name="error_category_label">دسته‌بندی</string>
+    <string name="error_description_label">توضیحات</string>
+    <string name="cng_related">مرتبط با CNG</string>
+    <string name="standard_obd">استاندارد OBD-II</string>
+    <string name="manufacturer_specific">اختصاصی سازنده</string>
+
+    <string name="error_field_value">%1$s: %2$s</string>
+    <string name="error_code_value">%1$s: %2$s</string>
+
+    <!-- Error Categories -->
+    <string name="category_misfire">احتراق ناقص</string>
+    <string name="category_fuel_air">تنظیم سوخت و هوا</string>
+    <string name="category_oxygen_sensor">سنسور اکسیژن</string>
+    <string name="category_emissions">آلایندگی</string>
+    <string name="category_egr">سیستم EGR</string>
+    <string name="category_air_flow">جریان هوا</string>
+    <string name="category_map_sensor">سنسور MAP</string>
+    <string name="category_throttle">موقعیت دریچه گاز</string>
+    <string name="category_temperature">سنسور دما</string>
+    <string name="category_ignition">سیستم جرقه‌زنی</string>
+    <string name="category_fuel_pressure">فشار سوخت</string>
+    <string name="category_communication">ارتباطات</string>
+    <string name="category_body">بدنه</string>
+    <string name="category_chassis">شاسی</string>
+
+    <!-- OBD Descriptions -->
+    <string name="obd_p0300_description">احتراق ناقص تصادفی یا چند سیلندر شناسایی شد</string>
+    <string name="obd_p0301_description">احتراق ناقص در سیلندر ۱ شناسایی شد</string>
+    <string name="obd_p0302_description">احتراق ناقص در سیلندر ۲ شناسایی شد</string>
+    <string name="obd_p0303_description">احتراق ناقص در سیلندر ۳ شناسایی شد</string>
+    <string name="obd_p0304_description">احتراق ناقص در سیلندر ۴ شناسایی شد</string>
+
+    <!-- Fuel and air -->
+    <string name="obd_p0170_description">اشکال در تنظیم مخلوط سوخت</string>
+    <string name="obd_p0171_description">مخلوط سیستم بیش از حد رقیق است</string>
+    <string name="obd_p0172_description">مخلوط سیستم بیش از حد غنی است</string>
+    <string name="obd_p0174_description">مخلوط سیستم بیش از حد رقیق است، بانک ۲</string>
+    <string name="obd_p0175_description">مخلوط سیستم بیش از حد غنی است، بانک ۲</string>
+
+    <!-- Oxygen sensors -->
+    <string name="obd_p0130_description">اشکال در مدار سنسور اکسیژن، بانک ۱ سنسور ۱</string>
+    <string name="obd_p0131_description">ولتاژ پایین مدار سنسور اکسیژن، بانک ۱ سنسور ۱</string>
+    <string name="obd_p0132_description">ولتاژ بالای مدار سنسور اکسیژن، بانک ۱ سنسور ۱</string>
+    <string name="obd_p0133_description">پاسخ کند سنسور اکسیژن، بانک ۱ سنسور ۱</string>
+    <string name="obd_p0134_description">عدم فعالیت سنسور اکسیژن، بانک ۱ سنسور ۱</string>
+    <string name="obd_p0135_description">اشکال در گرم‌کن سنسور اکسیژن، بانک ۱ سنسور ۱</string>
+    <string name="obd_p0140_description">عدم فعالیت سنسور اکسیژن، بانک ۱ سنسور ۲</string>
+
+    <!-- Emissions -->
+    <string name="obd_p0420_description">بازده سیستم کاتالیزور کمتر از حد مجاز است، بانک ۱</string>
+
+    <!-- EGR -->
+    <string name="obd_p0400_description">اشکال در جریان بازچرخانی گازهای خروجی</string>
+    <string name="obd_p0401_description">جریان بازچرخانی گازهای خروجی ناکافی است</string>
+    <string name="obd_p0402_description">جریان بازچرخانی گازهای خروجی بیش از حد است</string>
+
+    <!-- MAF -->
+    <string name="obd_p0100_description">اشکال در مدار سنجش جریان یا حجم هوای ورودی</string>
+    <string name="obd_p0101_description">محدوده یا عملکرد مدار سنجش جریان یا حجم هوای ورودی نامناسب است</string>
+    <string name="obd_p0102_description">ورودی مدار سنجش جریان یا حجم هوای ورودی پایین است</string>
+    <string name="obd_p0103_description">ورودی مدار سنجش جریان یا حجم هوای ورودی بالا است</string>
+
+    <!-- MAP -->
+    <string name="obd_p0105_description">اشکال در مدار فشار مطلق منیفولد یا فشار اتمسفر</string>
+    <string name="obd_p0106_description">محدوده یا عملکرد مدار فشار مطلق منیفولد یا فشار اتمسفر نامناسب است</string>
+    <string name="obd_p0107_description">ورودی مدار فشار مطلق منیفولد پایین است</string>
+    <string name="obd_p0108_description">ورودی مدار فشار مطلق منیفولد بالا است</string>
+
+    <!-- Throttle -->
+    <string name="obd_p0120_description">اشکال در مدار سنسور یا کلید موقعیت دریچه گاز</string>
+    <string name="obd_p0121_description">محدوده یا عملکرد سنسور موقعیت دریچه گاز نامناسب است</string>
+    <string name="obd_p0122_description">ورودی مدار سنسور موقعیت دریچه گاز پایین است</string>
+    <string name="obd_p0123_description">ورودی مدار سنسور موقعیت دریچه گاز بالا است</string>
+
+    <!-- Temperature -->
+    <string name="obd_p0115_description">اشکال در مدار سنسور دمای مایع خنک‌کننده موتور</string>
+    <string name="obd_p0116_description">محدوده یا عملکرد سنسور دمای مایع خنک‌کننده موتور نامناسب است</string>
+    <string name="obd_p0117_description">ورودی مدار سنسور دمای مایع خنک‌کننده موتور پایین است</string>
+    <string name="obd_p0118_description">ورودی مدار سنسور دمای مایع خنک‌کننده موتور بالا است</string>
+
+    <!-- Ignition -->
+    <string name="obd_p0351_description">اشکال در مدار اولیه یا ثانویه کوئل جرقه A</string>
+    <string name="obd_p0352_description">اشکال در مدار اولیه یا ثانویه کوئل جرقه B</string>
+    <string name="obd_p0353_description">اشکال در مدار اولیه یا ثانویه کوئل جرقه C</string>
+    <string name="obd_p0354_description">اشکال در مدار اولیه یا ثانویه کوئل جرقه D</string>
+
+    <!-- Fuel pressure -->
+    <string name="obd_p0087_description">فشار ریل سوخت یا سیستم سوخت بیش از حد پایین است</string>
+    <string name="obd_p0088_description">فشار ریل سوخت یا سیستم سوخت بیش از حد بالا است</string>
+
+    <!-- Communication -->
+    <string name="obd_u0100_description">ارتباط با ECU موتور از دست رفته است</string>
+    <string name="obd_u0121_description">ارتباط با ماژول کنترل سیستم ABS از دست رفته است</string>
+
+    <!-- Body -->
+    <string name="obd_b0001_description">اشکال در سیستم کنترل بدنه</string>
+
+    <!-- Chassis -->
+    <string name="obd_c0035_description">اشکال در مدار سنسور سرعت چرخ جلو سمت چپ</string>
+
+    <!-- Periodic Service -->
+    <string name="service_connection_checking">در حال بررسی اتصال ECU…</string>
+    <string name="service_current_km">مسافت فعلی: —</string>
+    <string name="service_status_current_only">مسافت فعلی: %1$s کیلومتر</string>
+    <string name="service_ecu_not_connected">ECU متصل نیست</string>
+    <string name="service_ecu_connected">ECU متصل است</string>
+    <string name="service_reading_km">در حال خواندن مسافت خودرو…</string>
+    <string name="service_km_not_received">امکان دریافت مسافت خودرو از ECU وجود ندارد</string>
+    <string name="service_km_unavailable">مسافت فعلی در دسترس نیست</string>
+    <string name="service_interval">فاصله سرویس: %1$s کیلومتر</string>
+    <string name="service_register">ثبت سرویس انجام‌شده</string>
+    <string name="service_registered">سرویس «%1$s» در کیلومتر %2$s ثبت شد.</string>
+    <string name="service_due">زمان سرویس فرا رسیده است\nزمان سرویس: %1$s کیلومتر\nمیزان تأخیر: %2$s کیلومتر</string>
+    <string name="service_status">آخرین سرویس: %1$s کیلومتر\nسرویس بعدی: %2$s کیلومتر\nمسافت باقی‌مانده: %3$s کیلومتر</string>
+    <string name="service_notification_title">یادآوری سرویس خودرو</string>
+    <string name="service_notification_text">سرویس %1$s فرا رسیده است - مسافت فعلی: %2$s کیلومتر</string>
+    <string name="service_notification_details">%1$s\nزمان سرویس: %2$s کیلومتر\nمسافت فعلی: %3$s کیلومتر</string>
+    <string name="service_notification_channel_name">یادآوری سرویس</string>
+    <string name="service_notification_channel_description">یادآوری تعمیر و سرویس دوره‌ای خودرو</string>
+
+</resources>

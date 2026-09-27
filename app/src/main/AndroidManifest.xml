@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Bluetooth -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
+
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN" />
+
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- Wi-Fi -->
+    <uses-permission
+        android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <uses-permission
+        android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-permission
+        android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="31" />
+
+    <!-- GPS -->
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Foreground Service -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+
+    <!-- Internet -->
+    <uses-permission
+        android:name="android.permission.INTERNET" />
+
+    <!-- Notifications -->
+    <uses-permission
+        android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".YadraApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Yadra">
+
+        <!-- Splash -->
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- Main -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Existing Activities -->
+        <activity
+            android:name=".BuyActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".VehicleProfileActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".VehicleProfileEditActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".LanguageActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ConnectionActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".WifiScanActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".EcuTestActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".UnknownEcuScannerActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ActuatorTestActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SensorsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ErrorsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".WarningsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".AIActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SupportActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ServiceActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".TripActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SubscriptionActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ChartsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".BluetoothActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".KwpTestActivity"
+            android:exported="false" />
+
+        <!-- Unknown ECU Scanner -->
+        <service
+            android:name=".UnknownEcuScanService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- Trip GPS Service -->
+        <service
+            android:name=".TripLocationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+    </application>
+
+</manifest>

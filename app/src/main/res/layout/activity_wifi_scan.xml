@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#020C07"
+    android:padding="16dp">
+
+    <!-- عنوان -->
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifi_scan_status"
+        android:textColor="#00FF50"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="12dp" />
+
+    <!-- وضعیت -->
+
+    <TextView
+        android:id="@+id/txtScanStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifi_scan_title"
+        android:textColor="#66FF99"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="8dp" />
+
+    <!-- رادار -->
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center">
+
+        <com.example.yadra.RadarView
+            android:id="@+id/radarView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
+
+    <!-- لیست شبکه‌ها -->
+
+    <TextView
+        android:id="@+id/txtNetworkTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifi_networks_found"
+        android:textColor="#00FF50"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:padding="8dp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:background="#06150B">
+
+        <LinearLayout
+            android:id="@+id/networkContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp" />
+
+    </ScrollView>
+
+    <!-- دکمه اسکن مجدد -->
+
+    <Button
+        android:id="@+id/btnScanAgain"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginTop="10dp"
+        android:text="@string/wifi_scan_again"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="#020C07"
+        android:backgroundTint="#00FF50" />
+
+</LinearLayout>

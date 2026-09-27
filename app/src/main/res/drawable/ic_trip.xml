@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- مسیر -->
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M8,37L18,27L25,33L40,16L43,19L25,39L18,33L11,40Z" />
+
+    <!-- نقطه شروع -->
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M8,10A6,6 0,1 0,8 22A6,6 0,1 0,8 10Z" />
+
+    <!-- مقصد -->
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M40,6A6,6 0,1 0,40 18A6,6 0,1 0,40 6Z" />
+
+</vector>

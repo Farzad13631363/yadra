@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">يادرا</string>
+
+    <!-- لوحة التحكم -->
+    <string name="dashboard">لوحة التحكم</string>
+    <string name="sensors">بيانات المستشعرات</string>
+    <string name="charts">المخططات</string>
+    <string name="error_codes">رموز الأعطال</string>
+    <string name="warning_lights">مصابيح التحذير</string>
+    <string name="ai">الذكاء الاصطناعي</string>
+    <string name="support">الدعم</string>
+    <string name="periodic_service">الصيانة الدورية</string>
+    <string name="trip">الرحلة</string>
+    <string name="subscription">الاشتراك</string>
+    <string name="settings">الإعدادات</string>
+
+    <!-- السيارة -->
+    <string name="vehicle">السيارة</string>
+    <string name="connected">متصل</string>
+    <string name="disconnected">غير متصل</string>
+
+    <!-- الإعدادات -->
+    <string name="language">اللغة</string>
+    <string name="theme">المظهر</string>
+    <string name="system">النظام</string>
+    <string name="light">فاتح</string>
+    <string name="dark">داكن</string>
+    <string name="font_type">نوع الخط</string>
+    <string name="font_size">حجم الخط</string>
+    <string name="font_size_small">صغير</string>
+    <string name="font_size_medium">متوسط</string>
+    <string name="font_size_large">كبير</string>
+    <string name="font_size_extra_large">كبير جداً</string>
+
+    <!-- Wi-Fi -->
+    <string name="wifi_scan_title">فحص Wi-Fi</string>
+    <string name="wifi_scan_status">جارٍ البحث عن الشبكات…</string>
+    <string name="wifi_networks_found">الشبكات التي تم العثور عليها</string>
+    <string name="wifi_scan_again">إعادة الفحص</string>
+    <string name="wifi_networks_count">تم العثور على %1$d شبكة</string>
+    <string name="wifi_network_item">📶  %1$s\n   قوة الإشارة: %2$s</string>
+    <string name="wifi_selected">تم اختيار %1$s</string>
+
+    <!-- الأعطال -->
+    <string name="errors_ready">جاهز لقراءة رموز أعطال السيارة</string>
+    <string name="read_errors">🔍 قراءة رموز الأعطال</string>
+    <string name="clear_errors">🗑 مسح رموز الأعطال</string>
+    <string name="no_errors">لم تتم قراءة أي رمز عطل بعد</string>
+
+    <string name="connecting_elm327">جارٍ الاتصال بـ ELM327…</string>
+    <string name="connection_failed">❌ فشل الاتصال بـ ELM327</string>
+    <string name="elm_no_response">❌ لم يتم استلام أي استجابة من ELM327</string>
+    <string name="elm_connected">🟢 تم الاتصال بـ ELM327</string>
+
+    <string name="clearing_errors">جارٍ مسح رموز الأعطال…</string>
+    <string name="clear_command_sent">🟢 تم إرسال أمر مسح الأعطال</string>
+    <string name="no_registered_errors">لم يتم العثور على رموز أعطال</string>
+
+    <!-- معلومات العطل -->
+    <string name="error_code_title">رمز العطل</string>
+    <string name="error_type_powertrain">مجموعة نقل الحركة</string>
+    <string name="error_type_body">الهيكل</string>
+    <string name="error_type_chassis">الشاسيه</string>
+    <string name="error_type_network">الشبكة</string>
+    <string name="unknown_error_code">رمز عطل غير معروف</string>
+
+    <string name="error_code_label">رمز العطل</string>
+    <string name="error_type_label">النوع</string>
+    <string name="error_category_label">الفئة</string>
+    <string name="error_description_label">الوصف</string>
+    <string name="cng_related">متعلق بـ CNG</string>
+    <string name="standard_obd">OBD-II قياسي</string>
+    <string name="manufacturer_specific">خاص بالشركة المصنعة</string>
+
+    <string name="error_field_value">%1$s: %2$s</string>
+    <string name="error_code_value">%1$s: %2$s</string>
+
+    <!-- فئات الأعطال -->
+    <string name="category_misfire">اختلال الاشتعال</string>
+    <string name="category_fuel_air">قياس الوقود والهواء</string>
+    <string name="category_oxygen_sensor">حساس الأكسجين</string>
+    <string name="category_emissions">الانبعاثات</string>
+    <string name="category_egr">نظام EGR</string>
+    <string name="category_air_flow">تدفق الهواء</string>
+    <string name="category_map_sensor">حساس MAP</string>
+    <string name="category_throttle">موضع الخانق</string>
+    <string name="category_temperature">حساس درجة الحرارة</string>
+    <string name="category_ignition">الإشعال</string>
+    <string name="category_fuel_pressure">ضغط الوقود</string>
+    <string name="category_communication">الاتصالات</string>
+    <string name="category_body">الهيكل</string>
+    <string name="category_chassis">الشاسيه</string>
+
+    <!-- أوصاف OBD -->
+    <string name="obd_p0300_description">تم اكتشاف اختلال عشوائي أو متعدد في اشتعال الأسطوانات</string>
+    <string name="obd_p0301_description">تم اكتشاف اختلال في اشتعال الأسطوانة 1</string>
+    <string name="obd_p0302_description">تم اكتشاف اختلال في اشتعال الأسطوانة 2</string>
+    <string name="obd_p0303_description">تم اكتشاف اختلال في اشتعال الأسطوانة 3</string>
+    <string name="obd_p0304_description">تم اكتشاف اختلال في اشتعال الأسطوانة 4</string>
+
+    <string name="obd_p0170_description">خلل في ضبط خليط الوقود</string>
+    <string name="obd_p0171_description">الخليط فقير جداً</string>
+    <string name="obd_p0172_description">الخليط غني جداً</string>
+    <string name="obd_p0174_description">الخليط فقير جداً، البنك 2</string>
+    <string name="obd_p0175_description">الخليط غني جداً، البنك 2</string>
+
+    <string name="obd_p0130_description">خلل في دائرة حساس الأكسجين، البنك 1 الحساس 1</string>
+    <string name="obd_p0131_description">جهد منخفض في دائرة حساس الأكسجين، البنك 1 الحساس 1</string>
+    <string name="obd_p0132_description">جهد مرتفع في دائرة حساس الأكسجين، البنك 1 الحساس 1</string>
+    <string name="obd_p0133_description">استجابة بطيئة لحساس الأكسجين، البنك 1 الحساس 1</string>
+    <string name="obd_p0134_description">لم يتم اكتشاف نشاط في حساس الأكسجين، البنك 1 الحساس 1</string>
+    <string name="obd_p0135_description">خلل في سخان حساس الأكسجين، البنك 1 الحساس 1</string>
+    <string name="obd_p0140_description">لم يتم اكتشاف نشاط في حساس الأكسجين، البنك 1 الحساس 2</string>
+
+    <string name="obd_p0420_description">كفاءة نظام المحول الحفاز أقل من الحد المطلوب، البنك 1</string>
+
+    <string name="obd_p0400_description">خلل في تدفق إعادة تدوير غاز العادم</string>
+    <string name="obd_p0401_description">تدفق إعادة تدوير غاز العادم غير كافٍ</string>
+    <string name="obd_p0402_description">تدفق إعادة تدوير غاز العادم مرتفع جداً</string>
+
+    <string name="obd_p0100_description">خلل في دائرة قياس تدفق أو حجم الهواء</string>
+    <string name="obd_p0101_description">مشكلة في نطاق أو أداء دائرة قياس تدفق أو حجم الهواء</string>
+    <string name="obd_p0102_description">إشارة منخفضة في دائرة قياس تدفق أو حجم الهواء</string>
+    <string name="obd_p0103_description">إشارة مرتفعة في دائرة قياس تدفق أو حجم الهواء</string>
+
+    <string name="obd_p0105_description">خلل في دائرة ضغط مجمع السحب المطلق أو الضغط الجوي</string>
+    <string name="obd_p0106_description">مشكلة في نطاق أو أداء دائرة ضغط مجمع السحب المطلق أو الضغط الجوي</string>
+    <string name="obd_p0107_description">إشارة منخفضة في دائرة ضغط مجمع السحب المطلق</string>
+    <string name="obd_p0108_description">إشارة مرتفعة في دائرة ضغط مجمع السحب المطلق</string>
+
+    <string name="obd_p0120_description">خلل في دائرة حساس أو مفتاح موضع الخانق</string>
+    <string name="obd_p0121_description">مشكلة في نطاق أو أداء حساس موضع الخانق</string>
+    <string name="obd_p0122_description">إشارة منخفضة في دائرة حساس موضع الخانق</string>
+    <string name="obd_p0123_description">إشارة مرتفعة في دائرة حساس موضع الخانق</string>
+
+    <string name="obd_p0115_description">خلل في دائرة حساس درجة حرارة سائل تبريد المحرك</string>
+    <string name="obd_p0116_description">مشكلة في نطاق أو أداء حساس درجة حرارة سائل تبريد المحرك</string>
+    <string name="obd_p0117_description">إشارة منخفضة في دائرة حساس درجة حرارة سائل تبريد المحرك</string>
+    <string name="obd_p0118_description">إشارة مرتفعة في دائرة حساس درجة حرارة سائل تبريد المحرك</string>
+
+    <string name="obd_p0351_description">خلل في الدائرة الأولية أو الثانوية لملف الإشعال A</string>
+    <string name="obd_p0352_description">خلل في الدائرة الأولية أو الثانوية لملف الإشعال B</string>
+    <string name="obd_p0353_description">خلل في الدائرة الأولية أو الثانوية لملف الإشعال C</string>
+    <string name="obd_p0354_description">خلل في الدائرة الأولية أو الثانوية لملف الإشعال D</string>
+
+    <string name="obd_p0087_description">ضغط سكة الوقود أو نظام الوقود منخفض جداً</string>
+    <string name="obd_p0088_description">ضغط سكة الوقود أو نظام الوقود مرتفع جداً</string>
+
+    <string name="obd_u0100_description">فقد الاتصال مع وحدة التحكم بالمحرك</string>
+    <string name="obd_u0121_description">فقد الاتصال مع وحدة التحكم بنظام ABS</string>
+
+    <string name="obd_b0001_description">خلل في نظام التحكم بالهيكل</string>
+
+    <string name="obd_c0035_description">خلل في دائرة حساس سرعة العجلة الأمامية اليسرى</string>
+
+    <!-- Wi-Fi Status -->
+    <string name="wifi_disconnected">🔴 Wi-Fi: غير متصل</string>
+    <string name="wifi_disabled">⚠️ Wi-Fi متوقف.</string>
+    <string name="wifi_scanning">🔄 جارٍ البحث عن شبكات Wi-Fi…</string>
+    <string name="wifi_permission_required">❌ يلزم إذن Wi-Fi</string>
+    <string name="wifi_permission_denied">❌ تم رفض إذن Wi-Fi</string>
+    <string name="wifi_no_networks">❌ لم يتم العثور على شبكات Wi-Fi</string>
+
+    <string name="wifi_networks_found_count">تم العثور على %1$d من شبكات Wi-Fi</string>
+
+    <string name="wifi_scan_failed">❌ فشل البحث: %1$s</string>
+    <string name="wifi_read_failed">❌ تعذرت قراءة شبكات Wi-Fi: %1$s</string>
+
+    <string name="wifi_target_item">🚗  %1$s\n   قوة الإشارة: %2$s\n   محول Wi-Fi من نوع ELM327</string>
+
+    <string name="wifi_connecting">🔄 جارٍ الاتصال بـ %1$s…</string>
+    <string name="wifi_connected">🟢 Wi-Fi: متصل\nSSID: %1$s</string>
+
+    <string name="wifi_connection_failed">🔴 فشل اتصال Wi-Fi</string>
+    <string name="wifi_connection_failed_detail">❌ فشل اتصال Wi-Fi: %1$s</string>
+
+    <string name="wifi_configure_failed">❌ تعذر إعداد WIFI_OBDII</string>
+    <string name="wifi_enable_failed">❌ تعذر تفعيل WIFI_OBDII</string>
+    <string name="wifi_connection_timeout">🔴 انتهت مهلة اتصال Wi-Fi</string>
+
+    <!-- ELM327 / ECU -->
+    <string name="elm327_disconnected">🟢 Wi-Fi: متصل\n🔴 ELM327: غير متصل\n192.168.0.10:35000</string>
+
+    <string name="elm327_initializing">🟢 Wi-Fi: متصل\n🟢 ELM327: متصل\nجارٍ التهيئة…</string>
+
+    <string name="elm327_initialization_failed">🟢 Wi-Fi: متصل\n🟢 ELM327: متصل\n⚠️ فشلت التهيئة: %1$s</string>
+
+    <string name="ecu_disconnected">🟢 Wi-Fi: متصل\n🟢 ELM327: متصل\n🔴 ECU: غير متصل\nلم يستجب ECU للأمر 0100</string>
+
+    <string name="full_wifi_connected">🟢 Wi-Fi: متصل</string>
+    <string name="full_elm_connected">🟢 ELM327: متصل</string>
+    <string name="full_ecu_connected">🟢 ECU: متصل</string>
+
+    <string name="full_elm_version">ELM327: %1$s</string>
+    <string name="full_protocol">البروتوكول: %1$s</string>
+    <string name="full_rpm">دورات المحرك: %1$d</string>
+    <string name="full_rpm_unavailable">دورات المحرك غير متاحة</string>
+
+    <!-- الصيانة الدورية -->
+    <string name="service_connection_checking">جارٍ التحقق من اتصال ECU…</string>
+    <string name="service_current_km">المسافة الحالية: —</string>
+    <string name="service_status_current_only">المسافة الحالية: %1$s كم</string>
+    <string name="service_ecu_not_connected">وحدة ECU غير متصلة</string>
+    <string name="service_ecu_connected">وحدة ECU متصلة</string>
+    <string name="service_reading_km">جارٍ قراءة مسافة السيارة…</string>
+    <string name="service_km_not_received">تعذر قراءة مسافة السيارة من وحدة ECU</string>
+    <string name="service_km_unavailable">المسافة الحالية غير متاحة</string>
+    <string name="service_interval">فترة الصيانة: %1$s كم</string>
+    <string name="service_register">تسجيل الصيانة المكتملة</string>
+    <string name="service_registered">تم تسجيل صيانة «%1$s» عند %2$s كم.</string>
+    <string name="service_due">حان موعد الصيانة\nموعد الصيانة: %1$s كم\nالتأخير: %2$s كم</string>
+    <string name="service_status">آخر صيانة: %1$s كم\nالصيانة التالية: %2$s كم\nالمسافة المتبقية: %3$s كم</string>
+    <string name="service_notification_title">تذكير بصيانة السيارة</string>
+    <string name="service_notification_text">حان موعد صيانة %1$s - المسافة الحالية: %2$s كم</string>
+    <string name="service_notification_details">%1$s\nموعد الصيانة: %2$s كم\nالمسافة الحالية: %3$s كم</string>
+    <string name="service_notification_channel_name">تذكيرات الصيانة</string>
+    <string name="service_notification_channel_description">تذكيرات صيانة وخدمة السيارة الدورية</string>
+
+</resources>

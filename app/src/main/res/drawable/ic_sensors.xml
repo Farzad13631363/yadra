@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- سنسور مرکزی -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M24,17A7,7 0,1 0,24 31A7,7 0,1 0,24 17Z" />
+
+    <!-- موج سمت راست -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M34,14A14,14 0,0 1,34 34L31,31A10,10 0,0 0,31 17Z" />
+
+    <!-- موج سمت چپ -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M14,14L17,17A10,10 0,0 0,17 31L14,34A14,14 0,0 1,14 14Z" />
+
+    <!-- نقطه مرکزی -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,22h4v4h-4z" />
+
+</vector>

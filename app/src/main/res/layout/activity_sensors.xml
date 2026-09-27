@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F7FA"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sensor Test"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#222222"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:id="@+id/txtSensorStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Checking ECU sensors..."
+            android:textSize="15sp"
+            android:textColor="#555555"
+            android:paddingBottom="12dp" />
+
+        <TextView
+            android:id="@+id/txtSelectedSensorCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Selected: 0"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#222222"
+            android:paddingBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/sensorContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <Button
+            android:id="@+id/btnStartSensorTest"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Start Sensor Test"
+            android:textAllCaps="false" />
+
+    </LinearLayout>
+
+</ScrollView>

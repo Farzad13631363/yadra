@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- هدست -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M8,25A16,16 0,0 1,40 25v9h-4v-9a12,12 0,0 0,-24 0v9H8z" />
+
+    <!-- گوشی چپ -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M7,27h7v12H9c-1.1,0 -2,-0.9 -2,-2z" />
+
+    <!-- گوشی راست -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M34,27h7v10c0,1.1 -0.9,2 -2,2h-5z" />
+
+    <!-- میکروفون -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M21,37h6v3h-6zM18,40h12v2H18z" />
+
+</vector>

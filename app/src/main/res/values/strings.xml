@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <string name="app_name">Yadra</string>
+
+    <string name="dashboard">Dashboard</string>
+    <string name="sensors">Sensor Information</string>
+    <string name="charts">Charts</string>
+    <string name="error_codes">Error Codes</string>
+    <string name="warning_lights">Warning Lights</string>
+    <string name="ai">Artificial Intelligence</string>
+    <string name="support">Support</string>
+    <string name="periodic_service">Periodic Service</string>
+    <string name="trip">Trip</string>
+    <string name="subscription">Subscription</string>
+    <string name="settings">Settings</string>
+    <string name="vehicle">Vehicle Type</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="language">Language</string>
+    <string name="theme">Theme</string>
+    <string name="system">System</string>
+    <string name="light">Light</string>
+    <string name="dark">Dark</string>
+    <string name="font_type">Font Type</string>
+    <string name="font_size">Font Size</string>
+    <string name="font_size_small">Small</string>
+    <string name="font_size_medium">Medium</string>
+    <string name="font_size_large">Large</string>
+    <string name="font_size_extra_large">Extra Large</string>
+
+    <string name="wifi_scan_title">Wi-Fi Scan</string>
+    <string name="wifi_scan_status">Searching for networks…</string>
+    <string name="wifi_networks_found">Networks found</string>
+    <string name="wifi_scan_again">Scan again</string>
+    <string name="wifi_networks_count">%1$d networks found</string>
+
+    <string name="errors_ready">Ready to scan vehicle error codes</string>
+    <string name="read_errors">🔍 Read error codes</string>
+    <string name="clear_errors">🗑 Clear error codes</string>
+    <string name="no_errors">No error codes have been read yet</string>
+
+    <string name="connecting_elm327">Connecting to ELM327...</string>
+    <string name="connection_failed">❌ Failed to connect to ELM327</string>
+    <string name="elm_no_response">❌ No response received from ELM327</string>
+    <string name="elm_connected">🟢 ELM327 connected</string>
+
+    <string name="clearing_errors">Clearing error codes...</string>
+    <string name="clear_command_sent">🟢 Clear command sent</string>
+    <string name="no_registered_errors">No error codes found</string>
+
+    <string name="error_code_title">Error code</string>
+    <string name="error_type_powertrain">Powertrain</string>
+    <string name="error_type_body">Body</string>
+    <string name="error_type_chassis">Chassis</string>
+    <string name="error_type_network">Network</string>
+    <string name="unknown_error_code">Unknown error code</string>
+    <string name="error_code_label">Error code</string>
+    <string name="error_type_label">Type</string>
+    <string name="error_category_label">Category</string>
+    <string name="error_description_label">Description</string>
+    <string name="cng_related">CNG related</string>
+    <string name="standard_obd">Standard OBD-II</string>
+    <string name="manufacturer_specific">Manufacturer specific</string>
+    <string name="error_field_value">%1$s: %2$s</string>
+    <string name="error_code_value">%1$s: %2$s</string>
+
+    <!-- OBD error categories -->
+
+    <string name="category_misfire">Misfire</string>
+    <string name="category_fuel_air">Fuel and air metering</string>
+    <string name="category_oxygen_sensor">Oxygen sensor</string>
+    <string name="category_emissions">Emissions</string>
+    <string name="category_egr">EGR system</string>
+    <string name="category_air_flow">Air flow</string>
+    <string name="category_map_sensor">MAP sensor</string>
+    <string name="category_throttle">Throttle position</string>
+    <string name="category_temperature">Temperature sensor</string>
+    <string name="category_ignition">Ignition</string>
+    <string name="category_fuel_pressure">Fuel pressure</string>
+    <string name="category_communication">Communication</string>
+    <string name="category_body">Body</string>
+    <string name="category_chassis">Chassis</string>
+
+    <!-- P0300 - P0304 -->
+
+    <string name="obd_p0300_description">Random or multiple cylinder misfire detected</string>
+    <string name="obd_p0301_description">Cylinder 1 misfire detected</string>
+    <string name="obd_p0302_description">Cylinder 2 misfire detected</string>
+    <string name="obd_p0303_description">Cylinder 3 misfire detected</string>
+    <string name="obd_p0304_description">Cylinder 4 misfire detected</string>
+
+    <!-- Fuel and air -->
+
+    <string name="obd_p0170_description">Fuel trim malfunction</string>
+    <string name="obd_p0171_description">System too lean</string>
+    <string name="obd_p0172_description">System too rich</string>
+    <string name="obd_p0174_description">System too lean, bank 2</string>
+    <string name="obd_p0175_description">System too rich, bank 2</string>
+
+    <!-- Oxygen sensors -->
+
+    <string name="obd_p0130_description">Oxygen sensor circuit malfunction, bank 1 sensor 1</string>
+    <string name="obd_p0131_description">Oxygen sensor circuit low voltage, bank 1 sensor 1</string>
+    <string name="obd_p0132_description">Oxygen sensor circuit high voltage, bank 1 sensor 1</string>
+    <string name="obd_p0133_description">Oxygen sensor circuit slow response, bank 1 sensor 1</string>
+    <string name="obd_p0134_description">Oxygen sensor no activity detected, bank 1 sensor 1</string>
+    <string name="obd_p0135_description">Oxygen sensor heater malfunction, bank 1 sensor 1</string>
+    <string name="obd_p0140_description">Oxygen sensor no activity detected, bank 1 sensor 2</string>
+
+    <!-- Emissions -->
+
+    <string name="obd_p0420_description">Catalyst system efficiency below threshold, bank 1</string>
+
+    <!-- EGR -->
+
+    <string name="obd_p0400_description">Exhaust gas recirculation flow malfunction</string>
+    <string name="obd_p0401_description">Exhaust gas recirculation flow insufficient</string>
+    <string name="obd_p0402_description">Exhaust gas recirculation flow excessive</string>
+
+    <!-- MAF -->
+
+    <string name="obd_p0100_description">Mass or volume air flow circuit malfunction</string>
+    <string name="obd_p0101_description">Mass or volume air flow circuit range or performance problem</string>
+    <string name="obd_p0102_description">Mass or volume air flow circuit low input</string>
+    <string name="obd_p0103_description">Mass or volume air flow circuit high input</string>
+
+    <!-- MAP -->
+
+    <string name="obd_p0105_description">Manifold absolute pressure or barometric pressure circuit malfunction</string>
+    <string name="obd_p0106_description">Manifold absolute pressure or barometric pressure circuit range or performance problem</string>
+    <string name="obd_p0107_description">Manifold absolute pressure or barometric pressure circuit low input</string>
+    <string name="obd_p0108_description">Manifold absolute pressure or barometric pressure circuit high input</string>
+
+    <!-- Throttle -->
+
+    <string name="obd_p0120_description">Throttle position sensor or switch circuit malfunction</string>
+    <string name="obd_p0121_description">Throttle position sensor or switch range or performance problem</string>
+    <string name="obd_p0122_description">Throttle position sensor or switch circuit low input</string>
+    <string name="obd_p0123_description">Throttle position sensor or switch circuit high input</string>
+
+    <!-- Temperature -->
+
+    <string name="obd_p0115_description">Engine coolant temperature sensor circuit malfunction</string>
+    <string name="obd_p0116_description">Engine coolant temperature sensor range or performance problem</string>
+    <string name="obd_p0117_description">Engine coolant temperature sensor circuit low input</string>
+    <string name="obd_p0118_description">Engine coolant temperature sensor circuit high input</string>
+
+    <!-- Ignition -->
+
+    <string name="obd_p0351_description">Ignition coil A primary or secondary circuit malfunction</string>
+    <string name="obd_p0352_description">Ignition coil B primary or secondary circuit malfunction</string>
+    <string name="obd_p0353_description">Ignition coil C primary or secondary circuit malfunction</string>
+    <string name="obd_p0354_description">Ignition coil D primary or secondary circuit malfunction</string>
+
+    <!-- Fuel pressure -->
+
+    <string name="obd_p0087_description">Fuel rail or system pressure too low</string>
+    <string name="obd_p0088_description">Fuel rail or system pressure too high</string>
+
+    <!-- Communication -->
+
+    <string name="obd_u0100_description">Lost communication with engine control module</string>
+    <string name="obd_u0121_description">Lost communication with anti-lock brake system control module</string>
+
+    <!-- Body -->
+
+    <string name="obd_b0001_description">Body control system fault</string>
+
+    <!-- Chassis -->
+
+    <string name="obd_c0035_description">Left front wheel speed sensor circuit malfunction</string>
+
+    <string name="wifi_disconnected">🔴 Wi-Fi: Disconnected</string>
+    <string name="wifi_disabled">⚠️ Wi-Fi is disabled.</string>
+    <string name="wifi_scanning">🔄 Scanning Wi-Fi networks...</string>
+    <string name="wifi_permission_required">❌ Wi-Fi permission required</string>
+    <string name="wifi_permission_denied">❌ Wi-Fi permission denied</string>
+    <string name="wifi_no_networks">❌ No Wi-Fi networks found</string>
+
+    <string name="wifi_networks_found_count">%1$d Wi-Fi networks found</string>
+
+    <string name="wifi_scan_failed">❌ Scan failed: %1$s</string>
+    <string name="wifi_read_failed">❌ Failed to read Wi-Fi networks: %1$s</string>
+
+    <string name="wifi_target_item">🚗  %1$s\n   Signal: %2$s\n   ELM327 Wi-Fi adapter</string>
+    <string name="wifi_network_item">📶  %1$s\n   Signal: %2$s</string>
+
+    <string name="wifi_connecting">🔄 Connecting to %1$s...</string>
+    <string name="wifi_connected">🟢 Wi-Fi: Connected\nSSID: %1$s</string>
+
+    <string name="wifi_connection_failed">🔴 Wi-Fi: Connection failed</string>
+    <string name="wifi_connection_failed_detail">❌ Wi-Fi connection failed: %1$s</string>
+
+    <string name="wifi_configure_failed">❌ Could not configure WIFI_OBDII</string>
+    <string name="wifi_enable_failed">❌ Could not enable WIFI_OBDII</string>
+    <string name="wifi_connection_timeout">🔴 Wi-Fi: Connection timeout</string>
+
+    <string name="elm327_disconnected">🟢 Wi-Fi: Connected\n🔴 ELM327: Disconnected\n192.168.0.10:35000</string>
+
+    <string name="elm327_initializing">🟢 Wi-Fi: Connected\n🟢 ELM327: Connected\nInitializing...</string>
+
+    <!-- FIXED: added %1$s because Kotlin passes error as an argument -->
+    <string name="elm327_initialization_failed">🟢 Wi-Fi: Connected\n🟢 ELM327: Connected\n⚠️ Initialization failed: %1$s</string>
+
+    <string name="ecu_disconnected">🟢 Wi-Fi: Connected\n🟢 ELM327: Connected\n🔴 ECU: Disconnected\nECU did not respond to 0100</string>
+
+    <!-- Wi-Fi connection errors -->
+
+    <string name="wifi_initialization_error">❌ Wi-Fi initialization failed: %1$s</string>
+    <string name="wifi_location_disabled">⚠️ Location service is disabled.</string>
+    <string name="wifi_normal_item">📶  %1$s\n   Signal: %2$s</string>
+    <string name="wifi_network_not_ready">⚠️ Wi-Fi network is not ready.</string>
+    <string name="wifi_cellular_unavailable">❌ Cellular Internet is unavailable.</string>
+    <string name="wifi_network_not_found">❌ WIFI_OBDII network not found.</string>
+
+    <!-- ELM327 -->
+
+    <string name="elm327_connecting">🔄 Connecting to ELM327...</string>
+    <string name="elm327_connection_failed">🔴 ELM327 connection failed: %1$s</string>
+    <string name="elm327_error">❌ ELM327 Error: %1$s</string>
+
+    <!-- ECU -->
+
+    <string name="ecu_connected">🟢 ECU: Connected</string>
+    <string name="ecu_not_detected">🔴 ECU: Not detected</string>
+
+    <string name="full_wifi_connected">🟢 Wi-Fi: Connected</string>
+    <string name="full_elm_connected">🟢 ELM327: Connected</string>
+    <string name="full_ecu_connected">🟢 ECU: Connected</string>
+
+    <string name="full_elm_version">ELM327: %1$s</string>
+    <string name="full_protocol">Protocol: %1$s</string>
+    <string name="full_rpm">RPM: %1$d</string>
+    <string name="full_rpm_unavailable">RPM: unavailable</string>
+
+    <!-- Periodic Service -->
+
+    <string name="service_connection_checking">Checking ECU connection...</string>
+
+    <string name="service_current_km">Current mileage: —</string>
+
+    <string name="service_status_current_only">Current mileage: %1$s km</string>
+
+    <string name="service_ecu_not_connected">ECU is not connected</string>
+
+    <string name="service_ecu_connected">ECU connected</string>
+
+    <string name="service_reading_km">Reading vehicle mileage...</string>
+
+    <string name="service_km_not_received">Vehicle mileage could not be read from the ECU</string>
+
+    <string name="service_km_unavailable">Current mileage is unavailable</string>
+
+    <string name="service_interval">Service interval: %1$s km</string>
+
+    <string name="service_register">Register completed service</string>
+
+    <string name="service_registered">Service "%1$s" registered at %2$s km.</string>
+
+    <string name="service_due">Service is due\nService due at: %1$s km\nOverdue by: %2$s km</string>
+
+    <string name="service_status">Last service: %1$s km\nNext service: %2$s km\nRemaining: %3$s km</string>
+
+    <string name="service_notification_title">Vehicle Service Reminder</string>
+
+    <string name="service_notification_text">%1$s is due - Current mileage: %2$s km</string>
+
+    <string name="service_notification_details">%1$s\nService due at: %2$s km\nCurrent mileage: %3$s km</string>
+
+    <string name="service_notification_channel_name">Service Reminders</string>
+
+    <string name="service_notification_channel_description">Vehicle maintenance and periodic service reminders</string>
+
+</resources>
