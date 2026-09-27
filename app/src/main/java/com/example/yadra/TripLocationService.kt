@@ -20,23 +20,47 @@ class TripLocationService : Service(), LocationListener {
 
     companion object {
 
-        const val ACTION_START = "com.example.yadra.TRIP_START"
-        const val ACTION_STOP = "com.example.yadra.TRIP_STOP"
+        const val ACTION_START =
+            "com.example.yadra.TRIP_START"
+
+        const val ACTION_STOP =
+            "com.example.yadra.TRIP_STOP"
 
         const val ACTION_LOCATION_UPDATE =
             "com.example.yadra.TRIP_LOCATION_UPDATE"
 
-        const val EXTRA_SPEED = "speed"
-        const val EXTRA_DISTANCE = "distance"
-        const val EXTRA_MAX_SPEED = "max_speed"
-        const val EXTRA_AVERAGE_SPEED = "average_speed"
-        const val EXTRA_DURATION = "duration"
+        const val EXTRA_SPEED =
+            "speed"
 
-        private const val CHANNEL_ID = "trip_location_channel"
-        private const val NOTIFICATION_ID = 2001
+        const val EXTRA_DISTANCE =
+            "distance"
 
-        private const val LOCATION_INTERVAL = 1000L
-        private const val MIN_DISTANCE = 1f
+        const val EXTRA_MAX_SPEED =
+            "max_speed"
+
+        const val EXTRA_AVERAGE_SPEED =
+            "average_speed"
+
+        const val EXTRA_DURATION =
+            "duration"
+
+        const val EXTRA_LATITUDE =
+            "latitude"
+
+        const val EXTRA_LONGITUDE =
+            "longitude"
+
+        private const val CHANNEL_ID =
+            "trip_location_channel"
+
+        private const val NOTIFICATION_ID =
+            2001
+
+        private const val LOCATION_INTERVAL =
+            1000L
+
+        private const val MIN_DISTANCE =
+            1f
     }
 
     private lateinit var locationManager: LocationManager
@@ -56,10 +80,13 @@ class TripLocationService : Service(), LocationListener {
     private var speedCount = 0
 
     override fun onCreate() {
+
         super.onCreate()
 
         locationManager =
-            getSystemService(LOCATION_SERVICE) as LocationManager
+            getSystemService(
+                LOCATION_SERVICE
+            ) as LocationManager
 
         createNotificationChannel()
     }
@@ -73,11 +100,14 @@ class TripLocationService : Service(), LocationListener {
         when (intent?.action) {
 
             ACTION_START -> {
+
                 startTripTracking()
             }
 
             ACTION_STOP -> {
+
                 stopTripTracking()
+
                 stopSelf()
             }
         }
@@ -92,13 +122,16 @@ class TripLocationService : Service(), LocationListener {
         }
 
         if (!hasLocationPermission()) {
+
             stopSelf()
+
             return
         }
 
         tripStarted = true
 
-        startTime = System.currentTimeMillis()
+        startTime =
+            System.currentTimeMillis()
 
         lastLocation = null
 
@@ -126,11 +159,31 @@ class TripLocationService : Service(), LocationListener {
 
         try {
 
-            if (locationManager.isProviderEnabled(
+            var lastKnownLocation: Location? = null
+
+            /*
+             * --------------------------------
+             * GPS PROVIDER
+             * --------------------------------
+             */
+
+            if (
+                locationManager.isProviderEnabled(
                     LocationManager.GPS_PROVIDER
                 )
             ) {
 
+                /*
+                 * آخرین موقعیت GPS
+                 */
+                lastKnownLocation =
+                    locationManager.getLastKnownLocation(
+                        LocationManager.GPS_PROVIDER
+                    )
+
+                /*
+                 * درخواست موقعیت جدید GPS
+                 */
                 locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
                     LOCATION_INTERVAL,
@@ -139,11 +192,33 @@ class TripLocationService : Service(), LocationListener {
                 )
             }
 
-            if (locationManager.isProviderEnabled(
+            /*
+             * --------------------------------
+             * NETWORK PROVIDER
+             * --------------------------------
+             */
+
+            if (
+                locationManager.isProviderEnabled(
                     LocationManager.NETWORK_PROVIDER
                 )
             ) {
 
+                /*
+                 * اگر GPS موقعیت قبلی نداشت،
+                 * Network را امتحان کن.
+                 */
+                if (lastKnownLocation == null) {
+
+                    lastKnownLocation =
+                        locationManager.getLastKnownLocation(
+                            LocationManager.NETWORK_PROVIDER
+                        )
+                }
+
+                /*
+                 * درخواست موقعیت Network
+                 */
                 locationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER,
                     LOCATION_INTERVAL,
@@ -152,7 +227,31 @@ class TripLocationService : Service(), LocationListener {
                 )
             }
 
-        } catch (e: SecurityException) {
+            /*
+             * --------------------------------
+             * LAST KNOWN LOCATION
+             * --------------------------------
+             *
+             * اگر موقعیت قبلی موجود باشد،
+             * بدون منتظر ماندن برای GPS
+             * آن را به Activity ارسال می‌کنیم.
+             */
+
+            if (lastKnownLocation != null) {
+
+                onLocationChanged(
+                    lastKnownLocation
+                )
+            }
+
+        } catch (
+            e: SecurityException
+        ) {
+
+            stopSelf()
+        } catch (
+            e: Exception
+        ) {
 
             stopSelf()
         }
@@ -165,87 +264,161 @@ class TripLocationService : Service(), LocationListener {
         }
 
         try {
-            locationManager.removeUpdates(this)
+
+            locationManager.removeUpdates(
+                this
+            )
+
         } catch (_: Exception) {
         }
 
         tripStarted = false
     }
 
-    override fun onLocationChanged(location: Location) {
+    override fun onLocationChanged(
+        location: Location
+    ) {
 
         if (!tripStarted) {
             return
         }
 
-        val currentTime = System.currentTimeMillis()
+        val currentTime =
+            System.currentTimeMillis()
+
+        /*
+         * --------------------------------
+         * SPEED
+         * --------------------------------
+         */
 
         var speed = 0f
 
         if (location.hasSpeed()) {
-            speed = location.speed
+
+            speed =
+                location.speed
         }
 
-        /*
-         * Android speed is meters per second.
-         * Convert to km/h.
-         */
-        val speedKmh = speed * 3.6f
+        val speedKmh =
+            speed * 3.6f
 
         /*
-         * Calculate distance from previous point.
+         * --------------------------------
+         * DISTANCE
+         * --------------------------------
          */
-        val previous = lastLocation
+
+        val previous =
+            lastLocation
 
         if (previous != null) {
 
-            val distance = previous.distanceTo(location)
+            val distance =
+                previous.distanceTo(
+                    location
+                )
 
             /*
-             * Ignore obviously bad GPS jumps.
+             * جلوگیری از GPS Jump
              */
-            if (distance >= 0f && distance < 500f) {
+            if (
+                distance >= 0f &&
+                distance < 500f
+            ) {
 
-                totalDistance += distance
+                totalDistance +=
+                    distance
             }
         }
 
         /*
-         * Maximum speed.
+         * --------------------------------
+         * MAX SPEED
+         * --------------------------------
          */
-        if (speedKmh > maxSpeed) {
-            maxSpeed = speedKmh
+
+        if (
+            speedKmh > maxSpeed
+        ) {
+
+            maxSpeed =
+                speedKmh
         }
 
         /*
-         * Average speed calculation.
+         * --------------------------------
+         * AVERAGE SPEED
+         * --------------------------------
          */
-        if (speedKmh >= 0f) {
 
-            speedSum += speedKmh
+        speedSum +=
+            speedKmh
 
-            speedCount++
-        }
+        speedCount++
 
-        lastLocation = Location(location)
+        /*
+         * --------------------------------
+         * SAVE LOCATION
+         * --------------------------------
+         */
+
+        lastLocation =
+            Location(location)
+
+        /*
+         * --------------------------------
+         * DURATION
+         * --------------------------------
+         */
 
         val duration =
-            currentTime - startTime
+            currentTime -
+                    startTime
+
+        /*
+         * --------------------------------
+         * AVERAGE SPEED
+         * --------------------------------
+         */
 
         val averageSpeed =
             if (speedCount > 0) {
-                speedSum / speedCount
+
+                speedSum /
+                        speedCount
+
             } else {
+
                 0f
             }
 
         /*
-         * Send data to TripActivity.
+         * --------------------------------
+         * GPS COORDINATES
+         * --------------------------------
          */
-        val updateIntent =
-            Intent(ACTION_LOCATION_UPDATE).apply {
 
-                setPackage(packageName)
+        val latitude =
+            location.latitude
+
+        val longitude =
+            location.longitude
+
+        /*
+         * --------------------------------
+         * SEND DATA TO TRIP ACTIVITY
+         * --------------------------------
+         */
+
+        val updateIntent =
+            Intent(
+                ACTION_LOCATION_UPDATE
+            ).apply {
+
+                setPackage(
+                    packageName
+                )
 
                 putExtra(
                     EXTRA_SPEED,
@@ -271,13 +444,28 @@ class TripLocationService : Service(), LocationListener {
                     EXTRA_DURATION,
                     duration
                 )
+
+                putExtra(
+                    EXTRA_LATITUDE,
+                    latitude
+                )
+
+                putExtra(
+                    EXTRA_LONGITUDE,
+                    longitude
+                )
             }
 
-        sendBroadcast(updateIntent)
+        sendBroadcast(
+            updateIntent
+        )
 
         /*
-         * Update foreground notification.
+         * --------------------------------
+         * NOTIFICATION
+         * --------------------------------
          */
+
         updateNotification(
             speedKmh,
             totalDistance
@@ -290,8 +478,12 @@ class TripLocationService : Service(), LocationListener {
             this,
             CHANNEL_ID
         )
-            .setContentTitle("YADRA Trip")
-            .setContentText("Trip recording is active")
+            .setContentTitle(
+                "YADRA Trip"
+            )
+            .setContentText(
+                "در حال دریافت موقعیت GPS..."
+            )
             .setSmallIcon(
                 android.R.drawable.ic_menu_mylocation
             )
@@ -310,20 +502,25 @@ class TripLocationService : Service(), LocationListener {
         val distanceKm =
             distanceMeters / 1000f
 
-        val text = String.format(
-            Locale.US,
-            "Speed: %.1f km/h  •  Distance: %.2f km",
-            speed,
-            distanceKm
-        )
+        val text =
+            String.format(
+                Locale.US,
+                "Speed: %.1f km/h  •  Distance: %.2f km",
+                speed,
+                distanceKm
+            )
 
         val notification =
             NotificationCompat.Builder(
                 this,
                 CHANNEL_ID
             )
-                .setContentTitle("YADRA Trip")
-                .setContentText(text)
+                .setContentTitle(
+                    "YADRA Trip"
+                )
+                .setContentText(
+                    text
+                )
                 .setSmallIcon(
                     android.R.drawable.ic_menu_mylocation
                 )
@@ -346,7 +543,10 @@ class TripLocationService : Service(), LocationListener {
 
     private fun createNotificationChannel() {
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (
+            Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.O
+        ) {
 
             val channel =
                 NotificationChannel(
@@ -363,27 +563,40 @@ class TripLocationService : Service(), LocationListener {
                     NOTIFICATION_SERVICE
                 ) as NotificationManager
 
-            manager.createNotificationChannel(channel)
+            manager.createNotificationChannel(
+                channel
+            )
         }
     }
 
     private fun hasLocationPermission(): Boolean {
 
-        return ActivityCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED ||
+        val fineLocation =
+            ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) ==
+                    PackageManager.PERMISSION_GRANTED
 
-                ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
+        val coarseLocation =
+            ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) ==
+                    PackageManager.PERMISSION_GRANTED
+
+        return fineLocation ||
+                coarseLocation
     }
 
-    override fun onProviderEnabled(provider: String) {
+    override fun onProviderEnabled(
+        provider: String
+    ) {
     }
 
-    override fun onProviderDisabled(provider: String) {
+    override fun onProviderDisabled(
+        provider: String
+    ) {
     }
 
     override fun onStatusChanged(
@@ -393,14 +606,21 @@ class TripLocationService : Service(), LocationListener {
     ) {
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
+    override fun onBind(
+        intent: Intent?
+    ): IBinder? {
+
         return null
     }
 
     override fun onDestroy() {
 
         try {
-            locationManager.removeUpdates(this)
+
+            locationManager.removeUpdates(
+                this
+            )
+
         } catch (_: Exception) {
         }
 
