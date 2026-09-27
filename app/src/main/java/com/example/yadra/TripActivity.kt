@@ -33,6 +33,7 @@ import org.osmdroid.views.overlay.Polyline
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.Calendar
 
 class TripActivity : AppCompatActivity() {
 
@@ -664,6 +665,10 @@ class TripActivity : AppCompatActivity() {
 
     private fun showSaveTripDialog() {
 
+        /*
+         * نام سفر
+         */
+
         val editText =
             EditText(this)
 
@@ -689,6 +694,46 @@ class TripActivity : AppCompatActivity() {
             10
         )
 
+        /*
+         * کامنت / توضیحات
+         */
+
+        val commentEditText =
+            EditText(this)
+
+        commentEditText.setSingleLine(
+            false
+        )
+
+        commentEditText.setMinLines(
+            3
+        )
+
+        commentEditText.gravity =
+            Gravity.TOP
+
+        commentEditText.hint =
+            "کامنت یا توضیحات سفر"
+
+        commentEditText.setTextColor(
+            Color.WHITE
+        )
+
+        commentEditText.setHintTextColor(
+            Color.GRAY
+        )
+
+        commentEditText.setPadding(
+            20,
+            10,
+            20,
+            10
+        )
+
+        /*
+         * Container
+         */
+
         val container =
             LinearLayout(this)
 
@@ -702,6 +747,10 @@ class TripActivity : AppCompatActivity() {
             0
         )
 
+        /*
+         * Name field
+         */
+
         container.addView(
             editText,
             LinearLayout.LayoutParams(
@@ -709,6 +758,28 @@ class TripActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
+
+        /*
+         * Comment field
+         */
+
+        val commentParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+
+        commentParams.topMargin =
+            12.dp()
+
+        container.addView(
+            commentEditText,
+            commentParams
+        )
+
+        /*
+         * Dialog
+         */
 
         val dialog =
             AlertDialog.Builder(
@@ -718,7 +789,7 @@ class TripActivity : AppCompatActivity() {
                     "ذخیره سفر"
                 )
                 .setMessage(
-                    "یک نام برای این سفر وارد کنید"
+                    "نام و توضیحات سفر را وارد کنید"
                 )
                 .setView(
                     container
@@ -764,6 +835,11 @@ class TripActivity : AppCompatActivity() {
                         .toString()
                         .trim()
 
+                val comment =
+                    commentEditText.text
+                        .toString()
+                        .trim()
+
                 if (name.isEmpty()) {
 
                     editText.error =
@@ -773,7 +849,8 @@ class TripActivity : AppCompatActivity() {
                 }
 
                 saveTrip(
-                    name
+                    name,
+                    comment
                 )
 
                 dialog.dismiss()
@@ -801,19 +878,19 @@ class TripActivity : AppCompatActivity() {
      */
 
     private fun saveTrip(
-        name: String
+        name: String,
+        comment: String
     ) {
 
         val trips =
             getTrips()
 
+        /*
+         * تاریخ شمسی + میلادی
+         */
+
         val date =
-            SimpleDateFormat(
-                "yyyy/MM/dd HH:mm",
-                Locale.US
-            ).format(
-                Date()
-            )
+            getDateTimeBoth()
 
         val trip =
             JSONObject()
@@ -821,6 +898,15 @@ class TripActivity : AppCompatActivity() {
         trip.put(
             "name",
             name
+        )
+
+        /*
+         * کامنت سفر
+         */
+
+        trip.put(
+            "comment",
+            comment
         )
 
         trip.put(
@@ -898,6 +984,198 @@ class TripActivity : AppCompatActivity() {
 
         vehicleMarker.isEnabled =
             false
+    }
+
+    /*
+     * ==========================================
+     * DATE - PERSIAN + GREGORIAN
+     * ==========================================
+     */
+
+    private fun getDateTimeBoth(): String {
+
+        val now =
+            Date()
+
+        /*
+         * تاریخ میلادی
+         */
+
+        val gregorianDate =
+            SimpleDateFormat(
+                "yyyy/MM/dd HH:mm",
+                Locale.US
+            ).format(
+                now
+            )
+
+        val calendar =
+            Calendar.getInstance()
+
+        calendar.time =
+            now
+
+        val gy =
+            calendar.get(Calendar.YEAR)
+
+        val gm =
+            calendar.get(Calendar.MONTH) + 1
+
+        val gd =
+            calendar.get(Calendar.DAY_OF_MONTH)
+
+        val hour =
+            calendar.get(Calendar.HOUR_OF_DAY)
+
+        val minute =
+            calendar.get(Calendar.MINUTE)
+
+        /*
+         * تبدیل به شمسی
+         */
+
+        val (jy, jm, jd) =
+            gregorianToPersian(
+                gy,
+                gm,
+                gd
+            )
+
+        /*
+         * LTR برای اینکه تاریخ‌ها
+         * هر دو از سمت چپ قرار بگیرند
+         */
+
+        val persianDate =
+            "\u202A%04d/%02d/%02d %02d:%02d\u202C".format(
+                Locale.US,
+                jy,
+                jm,
+                jd,
+                hour,
+                minute
+            )
+
+        val gregorianDateLeft =
+            "\u202Aمیلادی: %s\u202C".format(
+                Locale.US,
+                gregorianDate
+            )
+
+        return "$persianDate\n$gregorianDateLeft"
+    }
+
+    /*
+     * ==========================================
+     * GREGORIAN TO PERSIAN
+     * ==========================================
+     */
+
+    private fun gregorianToPersian(
+        gy: Int,
+        gm: Int,
+        gd: Int
+    ): Triple<Int, Int, Int> {
+
+        val gDaysInMonth =
+            intArrayOf(
+                31, 28, 31, 30, 31, 30,
+                31, 31, 30, 31, 30, 31
+            )
+
+        var gyTemp =
+            gy
+
+        var jy =
+            0
+
+        if (gyTemp >= 1600) {
+
+            jy =
+                979
+
+            gyTemp -=
+                1600
+
+        } else {
+
+            jy =
+                0
+
+            gyTemp -=
+                621
+        }
+
+        val gy2 =
+            if (gm > 2) {
+                gyTemp + 1
+            } else {
+                gyTemp
+            }
+
+        var days =
+            365 * gyTemp +
+                    ((gy2 + 3) / 4) -
+                    ((gy2 + 99) / 100) +
+                    ((gy2 + 399) / 400)
+
+        for (i in 0 until gm - 1) {
+
+            days +=
+                gDaysInMonth[i]
+        }
+
+        days +=
+            gd - 80
+
+        val jyTemp =
+            jy +
+                    33 * (days / 12053)
+
+        var daysRemaining =
+            days % 12053
+
+        var jyFinal =
+            jyTemp +
+                    4 * (daysRemaining / 1461)
+
+        daysRemaining %=
+            1461
+
+        if (daysRemaining > 365) {
+
+            jyFinal +=
+                (daysRemaining - 1) / 365
+
+            daysRemaining =
+                (daysRemaining - 1) % 365
+        }
+
+        val jm: Int
+        val jd: Int
+
+        if (daysRemaining < 186) {
+
+            jm =
+                1 + daysRemaining / 31
+
+            jd =
+                1 + daysRemaining % 31
+
+        } else {
+
+            jm =
+                7 + (daysRemaining - 186) / 30
+
+            jd =
+                1 + (daysRemaining - 186) % 30
+        }
+
+        return Triple(
+            jyFinal,
+            jm,
+            jd
+        )
     }
 
     /*
@@ -1278,6 +1556,12 @@ class TripActivity : AppCompatActivity() {
                 "سفر بدون نام"
             )
 
+        val comment =
+            trip.optString(
+                "comment",
+                ""
+            )
+
         val distance =
             trip.optDouble(
                 "distance",
@@ -1308,6 +1592,21 @@ class TripActivity : AppCompatActivity() {
                 "-"
             )
 
+        /*
+         * جزئیات کامنت
+         */
+
+        val commentText =
+            if (comment.isNotEmpty()) {
+                """
+                کامنت
+                $comment
+                
+                """.trimIndent()
+            } else {
+                ""
+            }
+
         val details =
             """
             مسافت
@@ -1324,6 +1623,8 @@ class TripActivity : AppCompatActivity() {
             
             تاریخ
             %s
+            
+            %s
             """.trimIndent().format(
                 Locale.US,
                 distance,
@@ -1332,7 +1633,8 @@ class TripActivity : AppCompatActivity() {
                 ),
                 maxSpeed,
                 averageSpeed,
-                date
+                date,
+                commentText
             )
 
         val dialog =
