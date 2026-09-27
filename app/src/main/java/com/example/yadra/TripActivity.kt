@@ -10,10 +10,14 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
-import android.view.View
+import android.view.MotionEvent
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -31,9 +35,9 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.Calendar
 
 class TripActivity : AppCompatActivity() {
 
@@ -97,6 +101,112 @@ class TripActivity : AppCompatActivity() {
 
     private var followVehicle =
         true
+
+    /*
+     * ==========================================
+     * CURRENT LOCATION REQUEST
+     * ==========================================
+     */
+
+    private var waitingForCurrentLocation =
+        false
+
+    private val locationHandler =
+        Handler(Looper.getMainLooper())
+
+    private val locationTimeoutRunnable =
+        Runnable {
+
+            if (waitingForCurrentLocation) {
+
+                waitingForCurrentLocation =
+                    false
+
+                stopTemporaryLocationUpdates()
+
+                Toast.makeText(
+                    this,
+                    "موقعیت GPS دریافت نشد",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+    private val temporaryLocationListener =
+        object : LocationListener {
+
+            override fun onLocationChanged(
+                location: Location
+            ) {
+
+                if (!waitingForCurrentLocation) {
+                    return
+                }
+
+                waitingForCurrentLocation =
+                    false
+
+                locationHandler.removeCallbacks(
+                    locationTimeoutRunnable
+                )
+
+                stopTemporaryLocationUpdates()
+
+                updateVehicleLocation(
+                    location.latitude,
+                    location.longitude
+                )
+
+                followVehicle =
+                    true
+
+                val point =
+                    GeoPoint(
+                        location.latitude,
+                        location.longitude
+                    )
+
+                tripMap.controller.animateTo(
+                    point
+                )
+
+                tripMap.controller.setZoom(
+                    17.0
+                )
+
+                tripMap.invalidate()
+
+                if (!tripRunning) {
+
+                    tvTripStatus.text =
+                        "موقعیت فعلی دریافت شد"
+
+                    tvTripStatus.setTextColor(
+                        Color.parseColor(
+                            ORANGE
+                        )
+                    )
+                }
+            }
+
+            override fun onProviderEnabled(
+                provider: String
+            ) {
+            }
+
+            override fun onProviderDisabled(
+                provider: String
+            ) {
+            }
+
+            @Suppress("DEPRECATION")
+            override fun onStatusChanged(
+                provider: String?,
+                status: Int,
+                extras: Bundle?
+            ) {
+            }
+        }
 
     /*
      * ==========================================
@@ -182,10 +292,6 @@ class TripActivity : AppCompatActivity() {
                         Double.NaN
                     )
 
-                /*
-                 * Save current trip values
-                 */
-
                 currentSpeed =
                     speed
 
@@ -201,10 +307,6 @@ class TripActivity : AppCompatActivity() {
                 currentAverageSpeed =
                     averageSpeed
 
-                /*
-                 * Update UI
-                 */
-
                 updateTripUI(
                     speed,
                     distance,
@@ -212,10 +314,6 @@ class TripActivity : AppCompatActivity() {
                     averageSpeed,
                     duration
                 )
-
-                /*
-                 * Update map
-                 */
 
                 if (
                     !latitude.isNaN() &&
@@ -350,12 +448,8 @@ class TripActivity : AppCompatActivity() {
         )
 
         tripMap.controller.setZoom(
-            15.0
+            16.0
         )
-
-        /*
-         * Temporary starting point
-         */
 
         val startPoint =
             GeoPoint(
@@ -366,10 +460,6 @@ class TripActivity : AppCompatActivity() {
         tripMap.controller.setCenter(
             startPoint
         )
-
-        /*
-         * Vehicle marker
-         */
 
         vehicleMarker =
             Marker(
@@ -390,16 +480,8 @@ class TripActivity : AppCompatActivity() {
             Marker.ANCHOR_BOTTOM
         )
 
-        /*
-         * فعلاً مخفی
-         */
-
         vehicleMarker.isEnabled =
             false
-
-        /*
-         * Trip route
-         */
 
         tripPolyline =
             Polyline()
@@ -431,42 +513,21 @@ class TripActivity : AppCompatActivity() {
 
         btnMapLocation.setOnClickListener {
 
-            followVehicle =
-                true
-
-            if (
-                !lastLatitude.isNaN() &&
-                !lastLongitude.isNaN()
-            ) {
-
-                val point =
-                    GeoPoint(
-                        lastLatitude,
-                        lastLongitude
-                    )
-
-                tripMap.controller.animateTo(
-                    point
-                )
-
-                tripMap.controller.setZoom(
-                    17.0
-                )
-
-            } else {
-
-                Toast.makeText(
-                    this,
-                    "هنوز موقعیت GPS دریافت نشده است",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            getCurrentLocation()
         }
 
-        tripMap.setOnTouchListener { _, _ ->
+        tripMap.setOnTouchListener { _, event ->
 
-            followVehicle =
-                false
+            when (event.actionMasked) {
+
+                MotionEvent.ACTION_DOWN,
+                MotionEvent.ACTION_POINTER_DOWN,
+                MotionEvent.ACTION_MOVE -> {
+
+                    followVehicle =
+                        false
+                }
+            }
 
             false
         }
@@ -481,6 +542,262 @@ class TripActivity : AppCompatActivity() {
 
                 startTrip()
             }
+        }
+    }
+
+    /*
+     * ==========================================
+     * GET CURRENT LOCATION
+     * ==========================================
+     */
+
+    private fun getCurrentLocation() {
+
+        if (!hasLocationPermission()) {
+
+            Toast.makeText(
+                this,
+                "دسترسی GPS برای دریافت مکان فعلی لازم است",
+                Toast.LENGTH_LONG
+            ).show()
+
+            return
+        }
+
+        val locationManager =
+            getSystemService(
+                Context.LOCATION_SERVICE
+            ) as LocationManager
+
+        val gpsEnabled =
+            try {
+
+                locationManager.isProviderEnabled(
+                    LocationManager.GPS_PROVIDER
+                )
+
+            } catch (_: Exception) {
+
+                false
+            }
+
+        val networkEnabled =
+            try {
+
+                locationManager.isProviderEnabled(
+                    LocationManager.NETWORK_PROVIDER
+                )
+
+            } catch (_: Exception) {
+
+                false
+            }
+
+        if (
+            !gpsEnabled &&
+            !networkEnabled
+        ) {
+
+            Toast.makeText(
+                this,
+                "لطفاً GPS یا Location دستگاه را روشن کنید",
+                Toast.LENGTH_LONG
+            ).show()
+
+            return
+        }
+
+        var lastKnownLocation:
+                Location? = null
+
+        try {
+
+            if (gpsEnabled) {
+
+                lastKnownLocation =
+                    locationManager.getLastKnownLocation(
+                        LocationManager.GPS_PROVIDER
+                    )
+            }
+
+            if (
+                lastKnownLocation == null &&
+                networkEnabled
+            ) {
+
+                lastKnownLocation =
+                    locationManager.getLastKnownLocation(
+                        LocationManager.NETWORK_PROVIDER
+                    )
+            }
+
+        } catch (_: SecurityException) {
+        }
+
+        if (lastKnownLocation != null) {
+
+            val latitude =
+                lastKnownLocation.latitude
+
+            val longitude =
+                lastKnownLocation.longitude
+
+            updateVehicleLocation(
+                latitude,
+                longitude
+            )
+
+            followVehicle =
+                true
+
+            val point =
+                GeoPoint(
+                    latitude,
+                    longitude
+                )
+
+            tripMap.controller.animateTo(
+                point
+            )
+
+            tripMap.controller.setZoom(
+                17.0
+            )
+
+            tripMap.invalidate()
+
+            if (!tripRunning) {
+
+                tvTripStatus.text =
+                    "موقعیت فعلی دریافت شد"
+
+                tvTripStatus.setTextColor(
+                    Color.parseColor(
+                        ORANGE
+                    )
+                )
+            }
+
+            requestFreshLocation()
+
+            return
+        }
+
+        requestFreshLocation()
+    }
+
+    /*
+     * ==========================================
+     * REQUEST FRESH LOCATION
+     * ==========================================
+     */
+
+    private fun requestFreshLocation() {
+
+        if (!hasLocationPermission()) {
+            return
+        }
+
+        if (waitingForCurrentLocation) {
+            return
+        }
+
+        val locationManager =
+            getSystemService(
+                Context.LOCATION_SERVICE
+            ) as LocationManager
+
+        waitingForCurrentLocation =
+            true
+
+        tvTripStatus.text =
+            "در حال دریافت موقعیت GPS..."
+
+        tvTripStatus.setTextColor(
+            Color.parseColor(
+                ORANGE
+            )
+        )
+
+        try {
+
+            if (
+                locationManager.isProviderEnabled(
+                    LocationManager.GPS_PROVIDER
+                )
+            ) {
+
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    500L,
+                    0f,
+                    temporaryLocationListener
+                )
+            }
+
+            if (
+                locationManager.isProviderEnabled(
+                    LocationManager.NETWORK_PROVIDER
+                )
+            ) {
+
+                locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER,
+                    1000L,
+                    0f,
+                    temporaryLocationListener
+                )
+            }
+
+            locationHandler.postDelayed(
+                locationTimeoutRunnable,
+                10000L
+            )
+
+        } catch (_: SecurityException) {
+
+            waitingForCurrentLocation =
+                false
+
+            Toast.makeText(
+                this,
+                "دسترسی GPS در دسترس نیست",
+                Toast.LENGTH_SHORT
+            ).show()
+
+        } catch (_: Exception) {
+
+            waitingForCurrentLocation =
+                false
+
+            Toast.makeText(
+                this,
+                "دریافت موقعیت GPS ناموفق بود",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    /*
+     * ==========================================
+     * STOP TEMPORARY LOCATION
+     * ==========================================
+     */
+
+    private fun stopTemporaryLocationUpdates() {
+
+        try {
+
+            val locationManager =
+                getSystemService(
+                    Context.LOCATION_SERVICE
+                ) as LocationManager
+
+            locationManager.removeUpdates(
+                temporaryLocationListener
+            )
+
+        } catch (_: Exception) {
         }
     }
 
@@ -531,18 +848,18 @@ class TripActivity : AppCompatActivity() {
             return
         }
 
+        waitingForCurrentLocation =
+            false
+
+        locationHandler.removeCallbacks(
+            locationTimeoutRunnable
+        )
+
+        stopTemporaryLocationUpdates()
+
         resetTripUI()
 
         clearTripRoute()
-
-        lastLatitude =
-            Double.NaN
-
-        lastLongitude =
-            Double.NaN
-
-        vehicleMarker.isEnabled =
-            false
 
         followVehicle =
             true
@@ -634,11 +951,6 @@ class TripActivity : AppCompatActivity() {
         btnStartStopTrip.text =
             "شروع سفر"
 
-        /*
-         * اگر هیچ GPS دریافت نشده،
-         * ذخیره نکن
-         */
-
         if (
             currentDuration <= 0L &&
             currentDistance <= 0f &&
@@ -665,10 +977,6 @@ class TripActivity : AppCompatActivity() {
 
     private fun showSaveTripDialog() {
 
-        /*
-         * نام سفر
-         */
-
         val editText =
             EditText(this)
 
@@ -693,10 +1001,6 @@ class TripActivity : AppCompatActivity() {
             20,
             10
         )
-
-        /*
-         * کامنت / توضیحات
-         */
 
         val commentEditText =
             EditText(this)
@@ -730,10 +1034,6 @@ class TripActivity : AppCompatActivity() {
             10
         )
 
-        /*
-         * Container
-         */
-
         val container =
             LinearLayout(this)
 
@@ -747,10 +1047,6 @@ class TripActivity : AppCompatActivity() {
             0
         )
 
-        /*
-         * Name field
-         */
-
         container.addView(
             editText,
             LinearLayout.LayoutParams(
@@ -758,10 +1054,6 @@ class TripActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
-
-        /*
-         * Comment field
-         */
 
         val commentParams =
             LinearLayout.LayoutParams(
@@ -776,10 +1068,6 @@ class TripActivity : AppCompatActivity() {
             commentEditText,
             commentParams
         )
-
-        /*
-         * Dialog
-         */
 
         val dialog =
             AlertDialog.Builder(
@@ -885,10 +1173,6 @@ class TripActivity : AppCompatActivity() {
         val trips =
             getTrips()
 
-        /*
-         * تاریخ شمسی + میلادی
-         */
-
         val date =
             getDateTimeBoth()
 
@@ -899,10 +1183,6 @@ class TripActivity : AppCompatActivity() {
             "name",
             name
         )
-
-        /*
-         * کامنت سفر
-         */
 
         trip.put(
             "comment",
@@ -934,18 +1214,10 @@ class TripActivity : AppCompatActivity() {
             date
         )
 
-        /*
-         * سفر جدید اول لیست
-         */
-
         trips.add(
             0,
             trip
         )
-
-        /*
-         * فقط 50 سفر آخر
-         */
 
         while (
             trips.size > MAX_TRIPS
@@ -968,27 +1240,17 @@ class TripActivity : AppCompatActivity() {
             Toast.LENGTH_SHORT
         ).show()
 
-        /*
-         * آماده سفر بعدی
-         */
-
         resetTripUI()
 
         clearTripRoute()
 
-        lastLatitude =
-            Double.NaN
-
-        lastLongitude =
-            Double.NaN
-
-        vehicleMarker.isEnabled =
+        followVehicle =
             false
     }
 
     /*
      * ==========================================
-     * DATE - PERSIAN + GREGORIAN
+     * DATE
      * ==========================================
      */
 
@@ -996,10 +1258,6 @@ class TripActivity : AppCompatActivity() {
 
         val now =
             Date()
-
-        /*
-         * تاریخ میلادی
-         */
 
         val gregorianDate =
             SimpleDateFormat(
@@ -1030,21 +1288,12 @@ class TripActivity : AppCompatActivity() {
         val minute =
             calendar.get(Calendar.MINUTE)
 
-        /*
-         * تبدیل به شمسی
-         */
-
         val (jy, jm, jd) =
             gregorianToPersian(
                 gy,
                 gm,
                 gd
             )
-
-        /*
-         * LTR برای اینکه تاریخ‌ها
-         * هر دو از سمت چپ قرار بگیرند
-         */
 
         val persianDate =
             "\u202A%04d/%02d/%02d %02d:%02d\u202C".format(
@@ -1318,10 +1567,6 @@ class TripActivity : AppCompatActivity() {
         index: Int
     ) {
 
-        /*
-         * Main row
-         */
-
         val row =
             LinearLayout(this)
 
@@ -1343,10 +1588,6 @@ class TripActivity : AppCompatActivity() {
                 CARD_DARK
             )
         )
-
-        /*
-         * Name
-         */
 
         val nameText =
             TextView(this)
@@ -1379,10 +1620,6 @@ class TripActivity : AppCompatActivity() {
             5.dp()
         )
 
-        /*
-         * نام سفر فضای اصلی را بگیرد
-         */
-
         val nameParams =
             LinearLayout.LayoutParams(
                 0,
@@ -1396,12 +1633,6 @@ class TripActivity : AppCompatActivity() {
             nameText,
             nameParams
         )
-
-        /*
-         * ==========================================
-         * DELETE BUTTON
-         * ==========================================
-         */
 
         val deleteButton =
             Button(this)
@@ -1431,10 +1662,6 @@ class TripActivity : AppCompatActivity() {
             0
         )
 
-        /*
-         * نارنجی YADRA
-         */
-
         if (
             android.os.Build.VERSION.SDK_INT >=
             android.os.Build.VERSION_CODES.LOLLIPOP
@@ -1455,10 +1682,6 @@ class TripActivity : AppCompatActivity() {
                 )
             )
         }
-
-        /*
-         * اندازه و فاصله دکمه
-         */
 
         val deleteParams =
             LinearLayout.LayoutParams(
@@ -1481,12 +1704,6 @@ class TripActivity : AppCompatActivity() {
             deleteParams
         )
 
-        /*
-         * ==========================================
-         * CLICK ON NAME / ROW
-         * ==========================================
-         */
-
         nameText.setOnClickListener {
 
             showTripDetails(
@@ -1501,12 +1718,6 @@ class TripActivity : AppCompatActivity() {
             )
         }
 
-        /*
-         * ==========================================
-         * DELETE
-         * ==========================================
-         */
-
         deleteButton.setOnClickListener {
 
             showDeleteConfirmation(
@@ -1514,12 +1725,6 @@ class TripActivity : AppCompatActivity() {
                 index
             )
         }
-
-        /*
-         * ==========================================
-         * ADD ROW
-         * ==========================================
-         */
 
         val rowParams =
             LinearLayout.LayoutParams(
@@ -1560,7 +1765,7 @@ class TripActivity : AppCompatActivity() {
             trip.optString(
                 "comment",
                 ""
-            )
+            ).trim()
 
         val distance =
             trip.optDouble(
@@ -1589,42 +1794,28 @@ class TripActivity : AppCompatActivity() {
         val date =
             trip.optString(
                 "date",
-                "-"
-            )
+                ""
+            ).trim()
 
         /*
-         * جزئیات کامنت
+         * ==========================================
+         * DETAILS TEXT
+         * ==========================================
          */
-
-        val commentText =
-            if (comment.isNotEmpty()) {
-                """
-                کامنت
-                $comment
-                
-                """.trimIndent()
-            } else {
-                ""
-            }
 
         val details =
             """
-            مسافت
+            مسافت:
             %.2f km
             
-            مدت سفر
+            مدت سفر:
             %s
             
-            حداکثر سرعت
+            حداکثر سرعت:
             %.1f km/h
             
-            میانگین سرعت
+            میانگین سرعت:
             %.1f km/h
-            
-            تاریخ
-            %s
-            
-            %s
             """.trimIndent().format(
                 Locale.US,
                 distance,
@@ -1632,10 +1823,287 @@ class TripActivity : AppCompatActivity() {
                     duration
                 ),
                 maxSpeed,
-                averageSpeed,
-                date,
-                commentText
+                averageSpeed
             )
+
+        /*
+         * ==========================================
+         * DATE CONTAINER
+         * ==========================================
+         */
+
+        val mainContainer =
+            LinearLayout(this)
+
+        mainContainer.orientation =
+            LinearLayout.VERTICAL
+
+        mainContainer.setPadding(
+            30.dp(),
+            10.dp(),
+            30.dp(),
+            10.dp()
+        )
+
+        /*
+         * Details
+         */
+
+        val detailsText =
+            TextView(this)
+
+        detailsText.text =
+            details
+
+        detailsText.textSize =
+            15f
+
+        detailsText.setTextColor(
+            Color.LTGRAY
+        )
+
+        detailsText.gravity =
+            Gravity.RIGHT
+
+        mainContainer.addView(
+            detailsText
+        )
+
+        /*
+         * ==========================================
+         * DATE TITLE
+         * ==========================================
+         */
+
+        val dateTitle =
+            TextView(this)
+
+        dateTitle.text =
+            "تاریخ:"
+
+        dateTitle.textSize =
+            15f
+
+        dateTitle.setTextColor(
+            Color.WHITE
+        )
+
+        dateTitle.setTypeface(
+            null,
+            android.graphics.Typeface.BOLD
+        )
+
+        dateTitle.gravity =
+            Gravity.RIGHT
+
+        val dateTitleParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+
+        dateTitleParams.topMargin =
+            12.dp()
+
+        dateTitleParams.bottomMargin =
+            6.dp()
+
+        mainContainer.addView(
+            dateTitle,
+            dateTitleParams
+        )
+
+        /*
+         * ==========================================
+         * DATE LINES
+         * ==========================================
+         */
+
+        val dateLines =
+            date.split("\n")
+
+        var shamsiDate =
+            ""
+
+        var gregorianDate =
+            ""
+
+        if (
+            dateLines.isNotEmpty()
+        ) {
+
+            shamsiDate =
+                dateLines[0]
+                    .replace(
+                        "شمسی:",
+                        ""
+                    )
+                    .replace(
+                        "میلادی:",
+                        ""
+                    )
+                    .trim()
+        }
+
+        if (
+            dateLines.size > 1
+        ) {
+
+            gregorianDate =
+                dateLines[1]
+                    .replace(
+                        "میلادی:",
+                        ""
+                    )
+                    .replace(
+                        "شمسی:",
+                        ""
+                    )
+                    .trim()
+        }
+
+        val shamsiText =
+            TextView(this)
+
+        shamsiText.text =
+            if (
+                shamsiDate.isNotEmpty()
+            ) {
+
+                "شمسی:    $shamsiDate"
+
+            } else {
+
+                "شمسی:    ندارد"
+            }
+
+        shamsiText.textSize =
+            15f
+
+        shamsiText.setTextColor(
+            Color.LTGRAY
+        )
+
+        shamsiText.textDirection =
+            android.view.View.TEXT_DIRECTION_LTR
+
+        shamsiText.gravity =
+            Gravity.LEFT
+
+        mainContainer.addView(
+            shamsiText
+        )
+
+        val gregorianText =
+            TextView(this)
+
+        gregorianText.text =
+            if (
+                gregorianDate.isNotEmpty()
+            ) {
+
+                "میلادی:  $gregorianDate"
+
+            } else {
+
+                "میلادی:  ندارد"
+            }
+
+        gregorianText.textSize =
+            15f
+
+        gregorianText.setTextColor(
+            Color.LTGRAY
+        )
+
+        gregorianText.textDirection =
+            android.view.View.TEXT_DIRECTION_LTR
+
+        gregorianText.gravity =
+            Gravity.LEFT
+
+        mainContainer.addView(
+            gregorianText
+        )
+
+        /*
+         * ==========================================
+         * COMMENT
+         * ==========================================
+         */
+
+        val commentTitle =
+            TextView(this)
+
+        commentTitle.text =
+            "کامنت:"
+
+        commentTitle.textSize =
+            15f
+
+        commentTitle.setTextColor(
+            Color.WHITE
+        )
+
+        commentTitle.setTypeface(
+            null,
+            android.graphics.Typeface.BOLD
+        )
+
+        commentTitle.gravity =
+            Gravity.RIGHT
+
+        val commentTitleParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+
+        commentTitleParams.topMargin =
+            12.dp()
+
+        commentTitleParams.bottomMargin =
+            4.dp()
+
+        mainContainer.addView(
+            commentTitle,
+            commentTitleParams
+        )
+
+        val commentText =
+            TextView(this)
+
+        commentText.text =
+            if (
+                comment.isNotEmpty()
+            ) {
+
+                comment
+
+            } else {
+
+                "ندارد"
+            }
+
+        commentText.textSize =
+            15f
+
+        commentText.setTextColor(
+            Color.LTGRAY
+        )
+
+        commentText.gravity =
+            Gravity.RIGHT
+
+        mainContainer.addView(
+            commentText
+        )
+
+        /*
+         * ==========================================
+         * DIALOG
+         * ==========================================
+         */
 
         val dialog =
             AlertDialog.Builder(
@@ -1644,8 +2112,8 @@ class TripActivity : AppCompatActivity() {
                 .setTitle(
                     name
                 )
-                .setMessage(
-                    details
+                .setView(
+                    mainContainer
                 )
                 .setPositiveButton(
                     "بستن",
@@ -1709,10 +2177,6 @@ class TripActivity : AppCompatActivity() {
                 .create()
 
         dialog.setOnShowListener {
-
-            /*
-             * دکمه حذف هم نارنجی
-             */
 
             dialog.getButton(
                 AlertDialog.BUTTON_POSITIVE
@@ -1822,10 +2286,6 @@ class TripActivity : AppCompatActivity() {
         }
 
         tripMap.invalidate()
-
-        /*
-         * GPS پیدا شد
-         */
 
         if (tripRunning) {
 
@@ -2113,6 +2573,26 @@ class TripActivity : AppCompatActivity() {
         tripMap.onPause()
 
         super.onPause()
+    }
+
+    /*
+     * ==========================================
+     * DESTROY
+     * ==========================================
+     */
+
+    override fun onDestroy() {
+
+        waitingForCurrentLocation =
+            false
+
+        locationHandler.removeCallbacks(
+            locationTimeoutRunnable
+        )
+
+        stopTemporaryLocationUpdates()
+
+        super.onDestroy()
     }
 
     /*
