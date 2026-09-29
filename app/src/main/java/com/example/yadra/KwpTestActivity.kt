@@ -1,1068 +1,2422 @@
 package com.example.yadra
 
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
-import android.view.Gravity
+import android.text.InputType
+import android.graphics.Color
+import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.Locale
+import kotlin.math.abs
 
 class KwpTestActivity : AppCompatActivity() {
 
-    private lateinit var outputText: TextView
-
-    // =========================================================
-    // KWP CONFIG
-    // =========================================================
-
     companion object {
-        private const val KWP_POST_PROMPT_QUIET_MS = 500L
-        private const val SAVED_PROTOCOL = "A5"
-        private const val ECU_ADDRESS = "11"
-        private const val ECU_HEADER = "83F111"
+
+        private const val PREFS_NAME =
+            "yadra_kwp_test_2101"
+
+        private const val KEY_SAMPLES =
+            "samples"
+
+        private const val KEY_RPM_SAMPLES =
+            "rpm_samples"
+
+        private const val KWP_POST_PROMPT_QUIET_MS =
+            500L
+
+        private const val SAVED_PROTOCOL =
+            "A5"
+
+        private const val ECU_ADDRESS =
+            "11"
     }
 
-    // =========================================================
-    // STATE
-    // =========================================================
+    /*
+     * ============================================================
+     * DATA CLASSES
+     * ============================================================
+     */
 
-    private var commandCounter = 0
-    private var validKwpResponses = 0
-    private var positiveResponses = 0
-    private var negativeResponses = 0
+    data class Kwp2101Sample(
+        val label: String,
+        val data: ByteArray
+    )
 
-    private var communicationConfirmed = false
+    private data class SavedRpmSample(
+        val rpm: Int,
+        val sample: Kwp2101Sample
+    )
 
-    private var protocolText = "UNKNOWN"
-    private var protocolNumber = "UNKNOWN"
+    data class Kwp2101Field(
+        val offset: Int,
+        val hex: String,
+        val decimal: Int,
+        val u16Be: Int?,
+        val u16Le: Int?
+    )
+
+    /*
+     * ============================================================
+     * SIMPLE 2101 ANALYZER
+     * ============================================================
+     */
+
+    object Kwp2101Analyzer {
+
+        fun buildFields(
+            data: ByteArray
+        ): List<Kwp2101Field> {
+
+            val result =
+                mutableListOf<Kwp2101Field>()
+
+            for (i in data.indices) {
+
+                val value =
+                    data[i].toInt() and 0xFF
+
+                val be =
+                    if (i + 1 < data.size) {
+                        (value shl 8) or
+                                (data[i + 1].toInt() and 0xFF)
+                    } else {
+                        null
+                    }
+
+                val le =
+                    if (i + 1 < data.size) {
+                        ((data[i + 1].toInt() and 0xFF) shl 8) or
+                                value
+                    } else {
+                        null
+                    }
+
+                result.add(
+                    Kwp2101Field(
+                        offset = i,
+                        hex = String.format(
+                            Locale.US,
+                            "%02X",
+                            value
+                        ),
+                        decimal = value,
+                        u16Be = be,
+                        u16Le = le
+                    )
+                )
+            }
+
+            return result
+        }
+
+        fun createTable(
+            sample: Kwp2101Sample
+        ): String {
+
+            val sb =
+                StringBuilder()
+
+            sb.appendLine()
+            sb.appendLine(
+                "=============================="
+            )
+            sb.appendLine(
+                "2101 SAMPLE: ${sample.label}"
+            )
+            sb.appendLine(
+                "SIZE: ${sample.data.size} bytes"
+            )
+            sb.appendLine(
+                "=============================="
+            )
+
+            for (field in buildFields(sample.data)) {
+
+                sb.append(
+                    String.format(
+                        Locale.US,
+                        "%02d  HEX=%s  U8=%3d",
+                        field.offset,
+                        field.hex,
+                        field.decimal
+                    )
+                )
+
+                if (field.u16Be != null) {
+
+                    sb.append(
+                        String.format(
+                            Locale.US,
+                            "  BE=%5d",
+                            field.u16Be
+                        )
+                    )
+                }
+
+                if (field.u16Le != null) {
+
+                    sb.append(
+                        String.format(
+                            Locale.US,
+                            "  LE=%5d",
+                            field.u16Le
+                        )
+                    )
+                }
+
+                sb.appendLine()
+            }
+
+            return sb.toString()
+        }
+
+        fun findChangingOffsets(
+            samples: List<Kwp2101Sample>
+        ): List<Int> {
+
+            if (samples.size < 2) {
+                return emptyList()
+            }
+
+            val maxSize =
+                samples.minOfOrNull {
+                    it.data.size
+                } ?: return emptyList()
+
+            val result =
+                mutableListOf<Int>()
+
+            for (offset in 0 until maxSize) {
+
+                val first =
+                    samples[0].data[offset].toInt() and 0xFF
+
+                var changed =
+                    false
+
+                for (i in 1 until samples.size) {
+
+                    val value =
+                        samples[i].data[offset].toInt() and 0xFF
+
+                    if (value != first) {
+                        changed = true
+                        break
+                    }
+                }
+
+                if (changed) {
+                    result.add(offset)
+                }
+            }
+
+            return result
+        }
+
+        fun findStableOffsets(
+            samples: List<Kwp2101Sample>
+        ): List<Int> {
+
+            if (samples.isEmpty()) {
+                return emptyList()
+            }
+
+            val maxSize =
+                samples.minOfOrNull {
+                    it.data.size
+                } ?: return emptyList()
+
+            val result =
+                mutableListOf<Int>()
+
+            for (offset in 0 until maxSize) {
+
+                val first =
+                    samples[0].data[offset].toInt() and 0xFF
+
+                var stable =
+                    true
+
+                for (i in 1 until samples.size) {
+
+                    val value =
+                        samples[i].data[offset].toInt() and 0xFF
+
+                    if (value != first) {
+                        stable = false
+                        break
+                    }
+                }
+
+                if (stable) {
+                    result.add(offset)
+                }
+            }
+
+            return result
+        }
+
+        private fun monotonicType(
+            values: List<Int>
+        ): String? {
+
+            if (values.size < 3) {
+                return null
+            }
+
+            var increasing = true
+            var decreasing = true
+
+            for (i in 1 until values.size) {
+
+                if (values[i] < values[i - 1]) {
+                    increasing = false
+                }
+
+                if (values[i] > values[i - 1]) {
+                    decreasing = false
+                }
+            }
+
+            return when {
+                increasing -> "INCREASING"
+                decreasing -> "DECREASING"
+                else -> null
+            }
+        }
+
+        fun findRpmCorrelations(
+            samples: List<Pair<Int, Kwp2101Sample>>
+        ): String {
+
+            if (samples.size < 2) {
+                return "Not enough RPM samples."
+            }
+
+            val sb =
+                StringBuilder()
+
+            sb.appendLine()
+            sb.appendLine(
+                "========== RPM U8 ANALYSIS =========="
+            )
+
+            val maxSize =
+                samples.minOfOrNull {
+                    it.second.data.size
+                } ?: 0
+
+            for (offset in 0 until maxSize) {
+
+                val values =
+                    samples.map {
+                        it.second.data[offset]
+                            .toInt() and 0xFF
+                    }
+
+                val rpms =
+                    samples.map {
+                        it.first
+                    }
+
+                val type =
+                    monotonicType(values)
+
+                if (type != null) {
+
+                    val min =
+                        values.minOrNull() ?: 0
+
+                    val max =
+                        values.maxOrNull() ?: 0
+
+                    if (max != min) {
+
+                        sb.appendLine(
+                            String.format(
+                                Locale.US,
+                                "OFFSET %02d  %s  %s  values=%s  rpm=%s",
+                                offset,
+                                type,
+                                if (type == "INCREASING")
+                                    "RPM-LIKE"
+                                else
+                                    "INVERSE-RPM-LIKE",
+                                values,
+                                rpms
+                            )
+                        )
+                    }
+                }
+            }
+
+            return sb.toString()
+        }
+
+        fun findRpmU16Correlations(
+            samples: List<Pair<Int, Kwp2101Sample>>
+        ): String {
+
+            if (samples.size < 2) {
+                return "Not enough RPM samples."
+            }
+
+            val sb =
+                StringBuilder()
+
+            sb.appendLine()
+            sb.appendLine(
+                "========== RPM U16 ANALYSIS =========="
+            )
+
+            val maxSize =
+                samples.minOfOrNull {
+                    it.second.data.size
+                } ?: 0
+
+            if (maxSize < 2) {
+                return sb.toString()
+            }
+
+            for (offset in 0 until maxSize - 1) {
+
+                val beValues =
+                    samples.map {
+                        val hi =
+                            it.second.data[offset]
+                                .toInt() and 0xFF
+
+                        val lo =
+                            it.second.data[offset + 1]
+                                .toInt() and 0xFF
+
+                        (hi shl 8) or lo
+                    }
+
+                val leValues =
+                    samples.map {
+                        val lo =
+                            it.second.data[offset]
+                                .toInt() and 0xFF
+
+                        val hi =
+                            it.second.data[offset + 1]
+                                .toInt() and 0xFF
+
+                        (hi shl 8) or lo
+                    }
+
+                val beType =
+                    monotonicType(beValues)
+
+                val leType =
+                    monotonicType(leValues)
+
+                if (
+                    beType != null &&
+                    beValues.distinct().size > 1
+                ) {
+
+                    sb.appendLine(
+                        String.format(
+                            Locale.US,
+                            "OFFSET %02d-%02d BE %s values=%s",
+                            offset,
+                            offset + 1,
+                            beType,
+                            beValues
+                        )
+                    )
+                }
+
+                if (
+                    leType != null &&
+                    leValues.distinct().size > 1
+                ) {
+
+                    sb.appendLine(
+                        String.format(
+                            Locale.US,
+                            "OFFSET %02d-%02d LE %s values=%s",
+                            offset,
+                            offset + 1,
+                            leType,
+                            leValues
+                        )
+                    )
+                }
+            }
+
+            return sb.toString()
+        }
+
+        fun analyze(
+            samples: List<Kwp2101Sample>,
+            rpmSamples: List<Pair<Int, Kwp2101Sample>>
+        ): String {
+
+            val sb =
+                StringBuilder()
+
+            sb.appendLine()
+            sb.appendLine(
+                "########################################"
+            )
+            sb.appendLine(
+                "KWP 2101 FULL ANALYSIS"
+            )
+            sb.appendLine(
+                "SAMPLES = ${samples.size}"
+            )
+            sb.appendLine(
+                "RPM SAMPLES = ${rpmSamples.size}"
+            )
+            sb.appendLine(
+                "########################################"
+            )
+
+            if (samples.isEmpty()) {
+
+                sb.appendLine(
+                    "NO SAMPLES."
+                )
+
+                return sb.toString()
+            }
+
+            val changing =
+                findChangingOffsets(samples)
+
+            val stable =
+                findStableOffsets(samples)
+
+            sb.appendLine()
+            sb.appendLine(
+                "CHANGING OFFSETS:"
+            )
+
+            sb.appendLine(
+                changing.joinToString(", ")
+            )
+
+            sb.appendLine()
+            sb.appendLine(
+                "STABLE OFFSETS:"
+            )
+
+            sb.appendLine(
+                stable.joinToString(", ")
+            )
+
+            sb.appendLine(
+                findRpmCorrelations(rpmSamples)
+            )
+
+            sb.appendLine(
+                findRpmU16Correlations(rpmSamples)
+            )
+
+            return sb.toString()
+        }
+    }
+
+    /*
+     * ============================================================
+     * UI
+     * ============================================================
+     */
+
+    private lateinit var outputText: TextView
+
+    private lateinit var btnRead2101: Button
+    private lateinit var btnAnalyze: Button
+    private lateinit var btnClear: Button
+    private lateinit var btnCopy: Button
+
+    private val rpmButtons =
+        mutableListOf<Button>()
+
+    /*
+     * ============================================================
+     * STATE
+     * ============================================================
+     */
+
+    private var commandCounter =
+        0
+
+    private var validKwpResponses =
+        0
+
+    private var positiveResponses =
+        0
+
+    private var negativeResponses =
+        0
+
+    private var communicationConfirmed =
+        false
+
+    @Volatile
+    private var kwpReady =
+        false
+
+    private var protocolText =
+        ""
+
+    private var protocolNumber =
+        ""
 
     private val fingerprintResults =
-        linkedMapOf<String, FingerprintResult>()
+        mutableListOf<FingerprintResult>()
 
-    // =========================================================
-    // DATA CLASSES
-    // =========================================================
+    private val live2101Samples =
+        mutableListOf<Kwp2101Sample>()
+
+    private val rpm2101Samples =
+        mutableListOf<SavedRpmSample>()
+
+    private var last2101Sample:
+            Kwp2101Sample? = null
+
+    private val prefs by lazy {
+        getSharedPreferences(
+            PREFS_NAME,
+            Context.MODE_PRIVATE
+        )
+    }
+
+    private val transportLock =
+        Any()
+
+    /*
+     * ============================================================
+     * KWP FRAME
+     * ============================================================
+     */
 
     private data class KwpFrame(
         val format: Int,
         val target: Int,
         val source: Int,
         val lengthField: Int,
-        val payload: List<Int>,
-        val checksum: Int,
-        val calculatedChecksum: Int,
+        val payload: ByteArray,
+        val checksum: Int?,
+        val calculatedChecksum: Int?,
         val checksumValid: Boolean,
-        val rawFrame: List<Int>
+        val rawFrame: ByteArray
     ) {
 
-        val serviceId: Int?
-            get() = payload.firstOrNull()
-
-        val isNegativeResponse: Boolean
-            get() = serviceId == 0x7F
-
-        val isPositiveResponse: Boolean
+        val serviceId: Int
             get() =
-                serviceId != null &&
-                        serviceId != 0x7F
+                if (payload.isNotEmpty())
+                    payload[0].toInt() and 0xFF
+                else
+                    -1
 
-        val rejectedService: Int?
+        val localId: Int?
+            get() =
+                if (payload.size >= 2)
+                    payload[1].toInt() and 0xFF
+                else
+                    null
+
+        val localData: ByteArray
+            get() =
+                if (payload.size > 2)
+                    payload.copyOfRange(
+                        2,
+                        payload.size
+                    )
+                else
+                    ByteArray(0)
+
+        val negativeService: Int?
             get() =
                 if (
-                    isNegativeResponse &&
-                    payload.size >= 2
+                    payload.size >= 3 &&
+                    serviceId == 0x7F
                 ) {
-                    payload[1]
+                    payload[1].toInt() and 0xFF
                 } else {
                     null
                 }
 
-        val negativeResponseCode: Int?
+        val negativeCode: Int?
             get() =
                 if (
-                    isNegativeResponse &&
-                    payload.size >= 3
+                    payload.size >= 3 &&
+                    serviceId == 0x7F
                 ) {
-                    payload[2]
+                    payload[2].toInt() and 0xFF
                 } else {
                     null
                 }
 
-        val data: List<Int>
-            get() =
-                if (payload.isNotEmpty()) {
-                    payload.drop(1)
-                } else {
-                    emptyList()
-                }
+        val data: ByteArray
+            get() = localData
     }
 
     private data class FingerprintResult(
         val command: String,
-        val frame: KwpFrame?,
-        val valid: Boolean,
-        val expectedService: Int?
+        val expectedService: Int?,
+        val responseService: Int?,
+        val validFrame: Boolean,
+        val checksumValid: Boolean,
+        val raw: String
     )
 
-    // =========================================================
-    // ACTIVITY
-    // =========================================================
+    /*
+     * ============================================================
+     * ACTIVITY
+     * ============================================================
+     */
 
     override fun onCreate(
         savedInstanceState: Bundle?
     ) {
         super.onCreate(savedInstanceState)
 
-        // -----------------------------------------------------
-        // ROOT LAYOUT
-        // -----------------------------------------------------
+        buildUi()
 
-        val rootLayout =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(16, 16, 16, 16)
-            }
+        loadPersistentSamples()
 
-        // -----------------------------------------------------
-        // COPY BUTTON
-        // -----------------------------------------------------
-
-        val copyButton =
-            Button(this).apply {
-                text = "COPY TX / RX"
-                textSize = 14f
-                gravity = Gravity.CENTER
-
-                setOnClickListener {
-                    copyTxRxLog()
-                }
-            }
-
-        rootLayout.addView(
-            copyButton,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-
-        // -----------------------------------------------------
-        // OUTPUT
-        // -----------------------------------------------------
-
-        outputText =
-            TextView(this).apply {
-                textSize = 12f
-                setPadding(
-                    8,
-                    16,
-                    8,
-                    24
-                )
-                setTextIsSelectable(true)
-            }
-
-        rootLayout.addView(
-            outputText,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-        )
-
-        setContentView(rootLayout)
-
-        /*
-         * IMPORTANT:
-         *
-         * YadraConnectionManager is an object (Singleton).
-         * Do NOT create it with YadraConnectionManager().
-         *
-         * We use the original Yadra manager directly.
-         */
+        updateSampleStatus()
 
         Thread {
             runExplorer()
         }.start()
     }
 
-    // =========================================================
-    // COPY TX / RX
-    // =========================================================
+    /*
+     * ============================================================
+     * UI BUILDER
+     * ============================================================
+     */
 
-    private fun copyTxRxLog() {
+    private fun buildUi() {
 
-        val text =
-            outputText.text?.toString().orEmpty()
+        val root =
+            LinearLayout(this).apply {
 
-        if (text.isBlank()) {
+                orientation =
+                    LinearLayout.VERTICAL
+
+                setPadding(
+                    12,
+                    12,
+                    12,
+                    12
+                )
+            }
+
+        val title =
+            TextView(this).apply {
+
+                text =
+                    "YADRA KWP 2101 LAB"
+
+                textSize =
+                    20f
+
+                setTextColor(
+                    Color.WHITE
+                )
+
+                setBackgroundColor(
+                    Color.rgb(
+                        25,
+                        25,
+                        25
+                    )
+                )
+
+                setPadding(
+                    12,
+                    12,
+                    12,
+                    12
+                )
+            }
+
+        root.addView(
+            title,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * FIRST ROW
+         * --------------------------------------------------------
+         */
+
+        val row1 =
+            LinearLayout(this).apply {
+                orientation =
+                    LinearLayout.HORIZONTAL
+            }
+
+        btnRead2101 =
+            Button(this).apply {
+
+                text =
+                    "READ 2101"
+
+                setOnClickListener {
+
+                    Thread {
+                        read2101Sample(
+                            "LIVE"
+                        )
+                    }.start()
+                }
+            }
+
+        btnAnalyze =
+            Button(this).apply {
+
+                text =
+                    "ANALYZE"
+
+                setOnClickListener {
+
+                    analyzeAllSamples()
+                }
+            }
+
+        btnClear =
+            Button(this).apply {
+
+                text =
+                    "CLEAR"
+
+                setOnClickListener {
+
+                    clearPersistentSamples()
+                }
+            }
+
+        addButtonToRow(
+            row1,
+            btnRead2101
+        )
+
+        addButtonToRow(
+            row1,
+            btnAnalyze
+        )
+
+        addButtonToRow(
+            row1,
+            btnClear
+        )
+
+        root.addView(row1)
+
+        /*
+         * --------------------------------------------------------
+         * SECOND ROW
+         * --------------------------------------------------------
+         */
+
+        val row2 =
+            LinearLayout(this).apply {
+                orientation =
+                    LinearLayout.HORIZONTAL
+            }
+
+        val offButton =
+            makeSampleButton(
+                "OFF"
+            ) {
+
+                Thread {
+                    read2101Sample(
+                        "OFF"
+                    )
+                }.start()
+            }
+
+        val idleButton =
+            makeSampleButton(
+                "IDLE"
+            ) {
+
+                Thread {
+                    read2101Sample(
+                        "IDLE"
+                    )
+                }.start()
+            }
+
+        addButtonToRow(
+            row2,
+            offButton
+        )
+
+        addButtonToRow(
+            row2,
+            idleButton
+        )
+
+        root.addView(row2)
+
+        /*
+         * --------------------------------------------------------
+         * RPM SCROLL
+         * --------------------------------------------------------
+         */
+
+        val rpmScroll =
+            HorizontalScrollView(this)
+
+        val rpmContainer =
+            LinearLayout(this).apply {
+                orientation =
+                    LinearLayout.HORIZONTAL
+            }
+
+        val rpmValues =
+            listOf(
+                500,
+                750,
+                1000,
+                1250,
+                1500,
+                1750,
+                2000,
+                2250,
+                2500,
+                2750,
+                3000,
+                3250,
+                3500,
+                3750,
+                4000,
+                4250,
+                4500,
+                4750,
+                5000,
+                5250,
+                5500,
+                5750,
+                6000
+            )
+
+        for (rpm in rpmValues) {
+
+            val button =
+                makeRpmButton(
+                    rpm
+                )
+
+            rpmButtons.add(
+                button
+            )
+
+            rpmContainer.addView(
+                button
+            )
+        }
+
+        val customRpm =
+            Button(this).apply {
+
+                text =
+                    "CUSTOM RPM"
+
+                setOnClickListener {
+                    showCustomRpmDialog()
+                }
+            }
+
+        rpmContainer.addView(
+            customRpm
+        )
+
+        rpmScroll.addView(
+            rpmContainer
+        )
+
+        root.addView(
+            rpmScroll,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        /*
+         * --------------------------------------------------------
+         * COPY LOG
+         * --------------------------------------------------------
+         */
+
+        btnCopy =
+            Button(this).apply {
+
+                text =
+                    "COPY LOG"
+
+                setOnClickListener {
+                    copyLog()
+                }
+            }
+
+        root.addView(
+            btnCopy
+        )
+
+        /*
+         * --------------------------------------------------------
+         * STATUS
+         * --------------------------------------------------------
+         */
+
+        val status =
+            TextView(this).apply {
+
+                tag =
+                    "sample_status"
+
+                textSize =
+                    13f
+
+                setPadding(
+                    8,
+                    8,
+                    8,
+                    8
+                )
+            }
+
+        root.addView(
+            status
+        )
+
+        /*
+         * --------------------------------------------------------
+         * OUTPUT
+         * --------------------------------------------------------
+         */
+
+        val horizontal =
+            HorizontalScrollView(this)
+
+        val vertical =
+            ScrollView(this)
+
+        outputText =
+            TextView(this).apply {
+
+                textSize =
+                    12f
+
+                setTextIsSelectable(
+                    true
+                )
+
+                setPadding(
+                    8,
+                    8,
+                    8,
+                    8
+                )
+
+                typeface =
+                    android.graphics.Typeface.MONOSPACE
+            }
+
+        horizontal.addView(
+            outputText
+        )
+
+        vertical.addView(
+            horizontal
+        )
+
+        root.addView(
+            vertical,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
+
+        setContentView(root)
+    }
+
+    private fun addButtonToRow(
+        row: LinearLayout,
+        button: Button
+    ) {
+
+        row.addView(
+            button,
+            LinearLayout.LayoutParams(
+                0,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+        )
+    }
+
+    private fun makeSampleButton(
+        textValue: String,
+        action: () -> Unit
+    ): Button {
+
+        return Button(this).apply {
+
+            text =
+                textValue
+
+            setOnClickListener {
+                action()
+            }
+        }
+    }
+
+    private fun makeRpmButton(
+        rpm: Int
+    ): Button {
+
+        return Button(this).apply {
+
+            text =
+                rpm.toString()
+
+            setOnClickListener {
+
+                Thread {
+
+                    read2101Sample(
+                        "${rpm}RPM",
+                        rpm
+                    )
+
+                }.start()
+            }
+        }
+    }
+
+    /*
+     * ============================================================
+     * CUSTOM RPM
+     * ============================================================
+     */
+
+    private fun showCustomRpmDialog() {
+
+        val input =
+            EditText(this).apply {
+
+                hint =
+                    "RPM"
+
+                inputType =
+                    InputType.TYPE_CLASS_NUMBER
+
+                setSingleLine(true)
+            }
+
+        AlertDialog.Builder(this)
+            .setTitle(
+                "READ CUSTOM RPM"
+            )
+            .setMessage(
+                "Enter actual engine RPM."
+            )
+            .setView(input)
+            .setNegativeButton(
+                "CANCEL",
+                null
+            )
+            .setPositiveButton(
+                "READ"
+            ) { _, _ ->
+
+                val rpm =
+                    input.text
+                        .toString()
+                        .trim()
+                        .toIntOrNull()
+
+                if (
+                    rpm == null ||
+                    rpm < 0 ||
+                    rpm > 12000
+                ) {
+
+                    appendLog(
+                        "INVALID RPM"
+                    )
+
+                    return@setPositiveButton
+                }
+
+                Thread {
+
+                    read2101Sample(
+                        "${rpm}RPM",
+                        rpm
+                    )
+
+                }.start()
+            }
+            .show()
+    }
+
+    /*
+     * ============================================================
+     * SAMPLE STATUS
+     * ============================================================
+     */
+
+    private fun updateSampleStatus() {
+
+        if (!::outputText.isInitialized) {
             return
         }
+
+        val status =
+            outputText.rootView
+                .findViewWithTag<TextView>(
+                    "sample_status"
+                )
+
+        status?.text =
+            "Saved samples: ${live2101Samples.size}    " +
+                    "Saved RPM points: ${rpm2101Samples.size}"
+    }
+
+    /*
+     * ============================================================
+     * PERMANENT STORAGE
+     * ============================================================
+     */
+
+    private fun savePersistentSamples() {
+
+        try {
+
+            val samplesJson =
+                JSONArray()
+
+            for (sample in live2101Samples) {
+
+                val obj =
+                    JSONObject()
+
+                obj.put(
+                    "label",
+                    sample.label
+                )
+
+                obj.put(
+                    "data",
+                    bytesToHex(
+                        sample.data
+                    )
+                )
+
+                samplesJson.put(
+                    obj
+                )
+            }
+
+            val rpmJson =
+                JSONArray()
+
+            for (entry in rpm2101Samples) {
+
+                val obj =
+                    JSONObject()
+
+                obj.put(
+                    "rpm",
+                    entry.rpm
+                )
+
+                obj.put(
+                    "label",
+                    entry.sample.label
+                )
+
+                obj.put(
+                    "data",
+                    bytesToHex(
+                        entry.sample.data
+                    )
+                )
+
+                rpmJson.put(
+                    obj
+                )
+            }
+
+            prefs.edit()
+                .putString(
+                    KEY_SAMPLES,
+                    samplesJson.toString()
+                )
+                .putString(
+                    KEY_RPM_SAMPLES,
+                    rpmJson.toString()
+                )
+                .apply()
+
+            runOnUiThread {
+                updateSampleStatus()
+            }
+
+        } catch (e: Exception) {
+
+            appendLog(
+                "SAVE ERROR: ${e.message}"
+            )
+        }
+    }
+
+    private fun loadPersistentSamples() {
+
+        live2101Samples.clear()
+        rpm2101Samples.clear()
+
+        try {
+
+            val samplesString =
+                prefs.getString(
+                    KEY_SAMPLES,
+                    null
+                )
+
+            if (!samplesString.isNullOrBlank()) {
+
+                val array =
+                    JSONArray(
+                        samplesString
+                    )
+
+                for (i in 0 until array.length()) {
+
+                    val obj =
+                        array.getJSONObject(i)
+
+                    val label =
+                        obj.optString(
+                            "label"
+                        )
+
+                    val hex =
+                        obj.optString(
+                            "data"
+                        )
+
+                    val data =
+                        hexToBytes(hex)
+
+                    if (
+                        label.isNotBlank() &&
+                        data.isNotEmpty()
+                    ) {
+
+                        live2101Samples.add(
+                            Kwp2101Sample(
+                                label,
+                                data
+                            )
+                        )
+                    }
+                }
+            }
+
+            val rpmString =
+                prefs.getString(
+                    KEY_RPM_SAMPLES,
+                    null
+                )
+
+            if (!rpmString.isNullOrBlank()) {
+
+                val array =
+                    JSONArray(
+                        rpmString
+                    )
+
+                for (i in 0 until array.length()) {
+
+                    val obj =
+                        array.getJSONObject(i)
+
+                    val rpm =
+                        obj.optInt(
+                            "rpm",
+                            -1
+                        )
+
+                    val label =
+                        obj.optString(
+                            "label"
+                        )
+
+                    val hex =
+                        obj.optString(
+                            "data"
+                        )
+
+                    val data =
+                        hexToBytes(hex)
+
+                    if (
+                        rpm >= 0 &&
+                        label.isNotBlank() &&
+                        data.isNotEmpty()
+                    ) {
+
+                        rpm2101Samples.add(
+                            SavedRpmSample(
+                                rpm,
+                                Kwp2101Sample(
+                                    label,
+                                    data
+                                )
+                            )
+                        )
+                    }
+                }
+            }
+
+            /*
+             * If old storage contains RPM samples but the
+             * separate RPM list does not, rebuild it.
+             */
+
+            if (
+                rpm2101Samples.isEmpty() &&
+                live2101Samples.isNotEmpty()
+            ) {
+
+                val rpmRegex =
+                    Regex(
+                        "^(\\d+)RPM$",
+                        RegexOption.IGNORE_CASE
+                    )
+
+                for (sample in live2101Samples) {
+
+                    val match =
+                        rpmRegex.matchEntire(
+                            sample.label
+                        )
+
+                    if (match != null) {
+
+                        val rpm =
+                            match.groupValues[1]
+                                .toIntOrNull()
+
+                        if (rpm != null) {
+
+                            rpm2101Samples.add(
+                                SavedRpmSample(
+                                    rpm,
+                                    sample
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            appendLog(
+                "Persistent samples loaded: " +
+                        live2101Samples.size
+            )
+
+            appendLog(
+                "Persistent RPM points loaded: " +
+                        rpm2101Samples.size
+            )
+
+        } catch (e: Exception) {
+
+            appendLog(
+                "LOAD ERROR: ${e.message}"
+            )
+        }
+    }
+
+    private fun clearPersistentSamples() {
+
+        AlertDialog.Builder(this)
+            .setTitle(
+                "CLEAR SAVED DATA"
+            )
+            .setMessage(
+                "Delete all stored 2101 samples and RPM points?"
+            )
+            .setNegativeButton(
+                "CANCEL",
+                null
+            )
+            .setPositiveButton(
+                "DELETE"
+            ) { _, _ ->
+
+                live2101Samples.clear()
+
+                rpm2101Samples.clear()
+
+                last2101Sample =
+                    null
+
+                prefs.edit()
+                    .remove(KEY_SAMPLES)
+                    .remove(KEY_RPM_SAMPLES)
+                    .apply()
+
+                appendLog(
+                    "ALL PERSISTENT SAMPLES CLEARED."
+                )
+
+                updateSampleStatus()
+            }
+            .show()
+    }
+
+    /*
+     * ============================================================
+     * HEX STORAGE
+     * ============================================================
+     */
+
+    private fun bytesToHex(
+        data: ByteArray
+    ): String {
+
+        val sb =
+            StringBuilder()
+
+        for (b in data) {
+
+            sb.append(
+                String.format(
+                    Locale.US,
+                    "%02X",
+                    b.toInt() and 0xFF
+                )
+            )
+        }
+
+        return sb.toString()
+    }
+
+    private fun hexToBytes(
+        hex: String
+    ): ByteArray {
+
+        val clean =
+            hex
+                .replace(
+                    "\\s".toRegex(),
+                    ""
+                )
+                .uppercase(Locale.US)
+
+        if (
+            clean.isEmpty() ||
+            clean.length % 2 != 0
+        ) {
+            return ByteArray(0)
+        }
+
+        val result =
+            ByteArray(
+                clean.length / 2
+            )
+
+        for (i in result.indices) {
+
+            val index =
+                i * 2
+
+            result[i] =
+                clean.substring(
+                    index,
+                    index + 2
+                ).toInt(16).toByte()
+        }
+
+        return result
+    }
+
+    /*
+     * ============================================================
+     * COPY LOG
+     * ============================================================
+     */
+
+    private fun copyLog() {
 
         val clipboard =
             getSystemService(
                 Context.CLIPBOARD_SERVICE
             ) as ClipboardManager
 
-        val clip =
+        clipboard.setPrimaryClip(
             ClipData.newPlainText(
-                "KWP TX RX",
-                text
+                "YADRA KWP LOG",
+                outputText.text.toString()
             )
+        )
 
-        clipboard.setPrimaryClip(clip)
-
-        runOnUiThread {
-            // متن دکمه برای چند لحظه تغییر می‌کند
-            // تا مشخص شود کپی انجام شده است.
-        }
+        appendLog(
+            "LOG COPIED."
+        )
     }
 
-    // =========================================================
-    // MAIN
-    // =========================================================
+    /*
+     * ============================================================
+     * MAIN EXPLORER
+     * ============================================================
+     */
 
     private fun runExplorer() {
 
         appendLog(
-            """
-            
-            YADRA KWP ECU EXPLORER
-            ==============================
-            
-            MODE
-            ------------------------------
-            Unknown ECU / KWP exploration
-            Protocol was already discovered.
-            46-protocol scan is NOT repeated.
-            Selected protocol: $SAVED_PROTOCOL
-            
-            """.trimIndent()
+            "YADRA KWP ECU EXPLORER"
         )
 
-        // -----------------------------------------------------
-        // CONNECT
-        // -----------------------------------------------------
+        appendLog(
+            "=============================="
+        )
 
         appendLog(
-            """
-            
-            CONNECT
-            ------------------------------
-            """.trimIndent()
+            "MODE"
+        )
+
+        appendLog(
+            "Unknown ECU / KWP exploration"
+        )
+
+        appendLog(
+            "Protocol was already discovered."
+        )
+
+        appendLog(
+            "46-protocol scan is NOT repeated."
+        )
+
+        appendLog(
+            "Selected protocol: $SAVED_PROTOCOL"
+        )
+
+        appendLog("CONNECT")
+
+        appendLog(
+            "------------------------------"
         )
 
         val connected =
-            YadraConnectionManager
-                .connectToElm327Transport()
+            try {
+
+                YadraConnectionManager
+                    .connectToElm327Transport()
+
+            } catch (e: Exception) {
+
+                appendLog(
+                    "CONNECT ERROR: ${e.message}"
+                )
+
+                false
+            }
 
         appendLog(
-            "ELM CONNECTED: $connected\n"
+            "ELM CONNECTED: $connected"
         )
 
         if (!connected) {
 
             appendLog(
-                """
-                
-                FINAL RESULT
-                ------------------------------
-                COMMUNICATION: FAILED
-                
-                ERROR:
-                ${YadraConnectionManager.lastConnectError}
-                """.trimIndent()
+                "ELM CONNECTION FAILED."
             )
 
             return
         }
 
-        // -----------------------------------------------------
-        // ATI
-        // -----------------------------------------------------
+        /*
+         * ELM setup
+         */
 
         runElmCommand(
-            command = "ATI",
-            info = "Read ELM327 firmware/version"
-        )
-
-        // -----------------------------------------------------
-        // ELM CONFIG
-        // -----------------------------------------------------
-
-        appendLog(
-            """
-            
-            ELM CONFIGURATION
-            ------------------------------
-            """.trimIndent()
+            "ATI"
         )
 
         runElmCommand(
-            "ATE0",
-            "Disable ELM echo"
+            "ATE0"
         )
 
         runElmCommand(
-            "ATL0",
-            "Disable ELM linefeeds"
+            "ATL0"
         )
 
         runElmCommand(
-            "ATS0",
-            "Disable ELM spaces"
+            "ATS0"
         )
 
         runElmCommand(
-            "ATH1",
-            "Enable response headers"
+            "ATH1"
         )
 
-        // -----------------------------------------------------
-        // SAVED PROTOCOL
-        // -----------------------------------------------------
-
-        appendLog(
-            """
-            
-            SAVED PROTOCOL
-            ------------------------------
-            REQUESTED PROTOCOL: $SAVED_PROTOCOL
-            A5 = ISO 14230-4 KWP FAST
-            PROTOCOL SET RESULT: true
-            """.trimIndent()
+        runElmCommand(
+            "ATAT1"
         )
 
-        // -----------------------------------------------------
-        // CURRENT PROTOCOL
-        // -----------------------------------------------------
-
-        appendLog(
-            """
-            
-            CURRENT ELM PROTOCOL
-            ------------------------------
-            """.trimIndent()
+        runElmCommand(
+            "ATST32"
         )
 
-        val atdp =
+        val dp =
             runElmCommand(
-                "ATDP",
-                "Read current ELM protocol"
+                "ATDP"
+            )
+
+        val dpn =
+            runElmCommand(
+                "ATDPN"
             )
 
         protocolText =
-            atdp
-                .trim()
-                .ifBlank {
-                    "UNKNOWN"
-                }
-
-        appendLog(
-            "ATDP: $protocolText\n"
-        )
-
-        val atdpn =
-            runElmCommand(
-                "ATDPN",
-                "Read current ELM protocol number"
-            )
+            dp
 
         protocolNumber =
-            atdpn
-                .trim()
-                .ifBlank {
-                    "UNKNOWN"
-                }
+            dpn
 
         appendLog(
-            "ATDPN: $protocolNumber\n"
+            "ATDP RESULT:"
         )
+
+        appendLog(dp)
+
+        appendLog(
+            "ATDPN RESULT:"
+        )
+
+        appendLog(dpn)
 
         val kwpDetected =
-            protocolText.contains(
-                "KWP",
+            dp.contains(
+                "ISO 14230",
                 ignoreCase = true
             ) ||
-                    protocolNumber.equals(
+                    dp.contains(
+                        "KWP",
+                        ignoreCase = true
+                    ) ||
+                    dpn.contains(
                         "A5",
                         ignoreCase = true
+                    ) ||
+                    SAVED_PROTOCOL.equals(
+                        dpn.trim(),
+                        ignoreCase = true
                     )
-
-        appendLog(
-            "KWP DETECTED: $kwpDetected\n"
-        )
 
         if (!kwpDetected) {
 
             appendLog(
-                """
-                
-                FINAL RESULT
-                ------------------------------
-                COMMUNICATION: CONNECTED
-                KWP DETECTED: FALSE
-                """.trimIndent()
+                "WARNING: KWP FAST not explicitly detected."
             )
-
-            return
-        }
-
-        // -----------------------------------------------------
-        // COMMUNICATION DISCOVERY
-        // -----------------------------------------------------
-
-        appendLog(
-            """
-            
-            COMMUNICATION DISCOVERY
-            ==============================
-            """.trimIndent()
-        )
-
-        runKwpCommand(
-            command = "0100",
-            info = "KWP ECU communication probe",
-            expectedService = null
-        )
-
-        // -----------------------------------------------------
-        // FINGERPRINT
-        // -----------------------------------------------------
-
-        appendLog(
-            """
-            
-            KWP FINGERPRINT DISCOVERY
-            ==============================
-            """.trimIndent()
-        )
-
-        testFingerprintCommand(
-            command = "3E",
-            title = "TESTER PRESENT",
-            expectedService = 0x7E
-        )
-
-        testFingerprintCommand(
-            command = "1A90",
-            title = "ECU IDENTIFICATION 1A90",
-            expectedService = 0x5A
-        )
-
-        testFingerprintCommand(
-            command = "1A91",
-            title = "ECU IDENTIFICATION 1A91",
-            expectedService = 0x5A
-        )
-
-        testFingerprintCommand(
-            command = "2101",
-            title = "LOCAL IDENTIFIER 2101",
-            expectedService = 0x61
-        )
-
-        // -----------------------------------------------------
-        // SUMMARY
-        // -----------------------------------------------------
-
-        appendLog(
-            """
-            
-            FINGERPRINT SUMMARY
-            ------------------------------
-            """.trimIndent()
-        )
-
-        for ((command, result) in fingerprintResults) {
-
-            val frame =
-                result.frame
-
-            if (
-                frame != null &&
-                frame.checksumValid &&
-                frame.serviceId == result.expectedService
-            ) {
-
-                appendLog(
-                    "$command -> POSITIVE service=${
-                        "%02X".format(
-                            frame.serviceId
-                        )
-                    }"
-                )
-
-            } else if (
-                frame != null &&
-                !frame.checksumValid
-            ) {
-
-                appendLog(
-                    "$command -> INVALID CHECKSUM"
-                )
-
-            } else {
-
-                appendLog(
-                    "$command -> NO VALID EXPECTED RESPONSE"
-                )
-            }
-        }
-
-        // -----------------------------------------------------
-        // DTC
-        // -----------------------------------------------------
-
-        val result2101 =
-            fingerprintResults["2101"]
-
-        val synchronized2101 =
-            result2101 != null &&
-                    result2101.valid &&
-                    result2101.frame != null &&
-                    result2101.frame.checksumValid &&
-                    result2101.frame.serviceId == 0x61
-
-        if (synchronized2101) {
-
-            runDtcDiscovery()
 
         } else {
 
             appendLog(
-                """
-                
-                DTC DISCOVERY
-                ==============================
-                
-                SERVICE 13 TEST: SKIPPED
-                Reason: 2101 response is not checksum-valid and synchronized.
-                No alternate DTC service is guessed.
-                """.trimIndent()
+                "KWP FAST DETECTED."
             )
         }
 
-        // -----------------------------------------------------
-        // FINAL
-        // -----------------------------------------------------
+        /*
+         * The ELM configuration is ready.
+         */
 
-        printFinalResult()
+        kwpReady =
+            true
+
+        /*
+         * Basic probe
+         */
+
+        runKwpCommand(
+            "0100"
+        )
+
+        /*
+         * Fingerprint services
+         */
+
+        testFingerprintCommand(
+            "3E",
+            0x7E
+        )
+
+        testFingerprintCommand(
+            "1A90",
+            0x5A
+        )
+
+        testFingerprintCommand(
+            "1A91",
+            0x5A
+        )
+
+        testFingerprintCommand(
+            "2101",
+            0x61
+        )
+
+        /*
+         * First automatic 2101 sample
+         */
+
+        analyzeSingle2101()
+
+        /*
+         * DTC
+         */
+
+        testFingerprintCommand(
+            "13",
+            0x53
+        )
+
+        /*
+         * Final
+         */
+
+        appendLog(
+            "=============================="
+        )
+
+        appendLog(
+            "EXPLORATION COMPLETE"
+        )
+
+        appendLog(
+            "VALID KWP RESPONSES: $validKwpResponses"
+        )
+
+        appendLog(
+            "POSITIVE RESPONSES: $positiveResponses"
+        )
+
+        appendLog(
+            "NEGATIVE RESPONSES: $negativeResponses"
+        )
+
+        appendLog(
+            "2101 SAMPLES: ${live2101Samples.size}"
+        )
+
+        appendLog(
+            "RPM POINTS: ${rpm2101Samples.size}"
+        )
     }
 
-    // =========================================================
-    // ELM COMMAND
-    // =========================================================
+    /*
+     * ============================================================
+     * ELM COMMAND
+     * ============================================================
+     */
 
     private fun runElmCommand(
-        command: String,
-        info: String
+        command: String
     ): String {
 
         commandCounter++
 
         appendLog(
-            """
-            
-            COMMAND $commandCounter
-            ------------------------------
-            COMMAND: $command
-            """.trimIndent()
+            "COMMAND $commandCounter"
         )
 
-        val start =
-            System.currentTimeMillis()
+        appendLog(
+            "COMMAND: $command"
+        )
+
+        val response =
+            try {
+
+                synchronized(
+                    transportLock
+                ) {
+
+                    YadraConnectionManager
+                        .sendCommand(
+                            command
+                        )
+                }
+
+            } catch (e: Exception) {
+
+                appendLog(
+                    "ERROR: ${e.message}"
+                )
+
+                ""
+            }
 
         appendLog(
             "TX: $command"
         )
 
-        val response =
-            YadraConnectionManager.sendCommand(
-                command
-            )
-
-        val elapsed =
-            System.currentTimeMillis() - start
-
         appendLog(
-            "RX: ${response.ifBlank { "<EMPTY>" }}"
+            "RX: $response"
         )
-
-        appendLog(
-            "RESPONSE TIME: ${elapsed} ms"
-        )
-
-        appendLog(
-            "INFO: $info"
-        )
-
-        appendLog(
-            "ELM RESULT: ${
-                if (response.isBlank()) {
-                    "NO RESPONSE"
-                } else {
-                    "RESPONSE RECEIVED"
-                }
-            }\n"
-        )
-
-        if (command.equals("ATI", true)) {
-
-            appendLog(
-                "ELM VERSION: ${
-                    response
-                        .replace("\r", "")
-                        .replace("\n", "")
-                        .trim()
-                }\n"
-            )
-        }
 
         return response
     }
 
-    // =========================================================
-    // KWP COMMAND
-    // =========================================================
+    /*
+     * ============================================================
+     * KWP COMMAND
+     * ============================================================
+     */
 
     private fun runKwpCommand(
-        command: String,
-        info: String,
-        expectedService: Int?
-    ): List<KwpFrame> {
+        command: String
+    ): String {
 
         commandCounter++
 
         appendLog(
-            """
-            
-            COMMAND $commandCounter
-            ------------------------------
-            COMMAND: $command
-            """.trimIndent()
+            "COMMAND $commandCounter"
         )
 
-        val start =
-            System.currentTimeMillis()
+        appendLog(
+            "COMMAND: $command"
+        )
+
+        val response =
+            try {
+
+                synchronized(
+                    transportLock
+                ) {
+
+                    YadraConnectionManager
+                        .sendCommand(
+                            command
+                        )
+                }
+
+            } catch (e: Exception) {
+
+                appendLog(
+                    "ERROR: ${e.message}"
+                )
+
+                ""
+            }
 
         appendLog(
             "TX: $command"
         )
 
-        val response =
-            YadraConnectionManager.sendCommand(
-                command = command,
-                postPromptQuietMs =
-                    KWP_POST_PROMPT_QUIET_MS
-            )
-
-        val elapsed =
-            System.currentTimeMillis() - start
-
         appendLog(
-            "RX: ${response.ifBlank { "<EMPTY>" }}"
+            "RX: $response"
         )
 
-        appendLog(
-            "RESPONSE TIME: ${elapsed} ms"
-        )
-
-        appendLog(
-            "INFO: $info"
-        )
-
-        appendLog(
-            "ELM RESULT: ${
-                if (response.isBlank()) {
-                    "NO RESPONSE"
-                } else {
-                    "RESPONSE RECEIVED"
-                }
-            }\n"
-        )
-
-        val frames =
-            parseKwpFrames(response)
-
-        if (frames.isEmpty()) {
-
-            appendLog(
-                "NO VALID KWP FRAME PARSED\n"
-            )
-
-            return emptyList()
-        }
-
-        frames.forEachIndexed { index, frame ->
-
-            printKwpFrame(
-                frameNumber = index + 1,
-                frame = frame,
-                expectedService = expectedService
-            )
-
-            if (frame.checksumValid) {
-
-                registerKwpFrame(
-                    command = command,
-                    frame = frame
-                )
-            }
-        }
-
-        return frames
+        return response
     }
 
-    // =========================================================
-    // FINGERPRINT
-    // =========================================================
+    /*
+     * ============================================================
+     * FINGERPRINT
+     * ============================================================
+     */
 
     private fun testFingerprintCommand(
         command: String,
-        title: String,
         expectedService: Int
     ) {
 
-        appendLog(
-            """
-            
-            FINGERPRINT: $title
-            COMMAND: $command
-            """.trimIndent()
-        )
+        val response =
+            runKwpCommand(
+                command
+            )
 
         val frames =
-            runKwpCommand(
-                command = command,
-                info = title,
-                expectedService = expectedService
+            parseKwpResponse(
+                response
             )
 
-        val validFrame =
-            frames.firstOrNull {
-                it.checksumValid
-            }
+        var matched =
+            false
 
-        val isValid =
-            validFrame != null &&
-                    validFrame.serviceId == expectedService
+        for (frame in frames) {
 
-        fingerprintResults[command] =
-            FingerprintResult(
-                command = command,
-                frame =
-                    validFrame
-                        ?: frames.firstOrNull(),
-                valid = isValid,
-                expectedService = expectedService
-            )
-
-        if (isValid) {
-
-            appendLog(
-                "RESULT: POSITIVE RESPONSE"
+            registerKwpFrame(
+                frame
             )
 
             if (
-                command.equals("1A90", true) ||
-                command.equals("1A91", true)
+                frame.checksumValid &&
+                frame.serviceId ==
+                expectedService
             ) {
 
-                val data =
-                    validFrame!!.data
-
-                appendLog(
-                    "IDENTIFICATION DATA: ${
-                        formatBytes(data)
-                    }"
-                )
-
-                if (
-                    data.isNotEmpty() &&
-                    data.all {
-                        it == 0xFF
-                    }
-                ) {
-
-                    appendLog(
-                        "IDENTIFICATION DATA STATUS: ALL FF"
-                    )
-                }
+                matched =
+                    true
             }
-
-        } else {
-
-            appendLog(
-                "RESULT: INVALID / UNEXPECTED RESPONSE"
-            )
         }
 
-        appendLog("")
+        fingerprintResults.add(
+            FingerprintResult(
+                command = command,
+                expectedService = expectedService,
+                responseService =
+                    frames.firstOrNull()
+                        ?.serviceId,
+                validFrame = frames.isNotEmpty(),
+                checksumValid =
+                    frames.any {
+                        it.checksumValid
+                    },
+                raw = response
+            )
+        )
+
+        appendLog(
+            if (matched)
+                "FINGERPRINT MATCH: $command"
+            else
+                "FINGERPRINT NO MATCH: $command"
+        )
     }
 
-    // =========================================================
-    // KWP FRAME REGISTRATION
-    // =========================================================
+    /*
+     * ============================================================
+     * 2101 INITIAL SAMPLE
+     * ============================================================
+     */
 
-    private fun registerKwpFrame(
-        command: String,
-        frame: KwpFrame
-    ) {
+    private fun analyzeSingle2101() {
 
-        if (!frame.checksumValid) {
+        if (!kwpReady) {
+            appendLog(
+                "2101 skipped: KWP not ready."
+            )
+            return
+        }
+
+        val response =
+            runKwpCommand(
+                "2101"
+            )
+
+        val frames =
+            parseKwpResponse(
+                response
+            )
+
+        val frame =
+            frames.firstOrNull {
+                it.checksumValid &&
+                        it.serviceId == 0x61 &&
+                        it.localId == 0x01
+            }
+
+        if (frame == null) {
 
             appendLog(
-                """
-                FRAME NOT REGISTERED
-                REASON: INVALID CHECKSUM
-                """.trimIndent()
+                "2101 INITIAL: valid 61/01 frame not found."
             )
 
             return
         }
 
-        validKwpResponses++
+        val data =
+            frame.localData
 
-        if (frame.isNegativeResponse) {
-
-            negativeResponses++
-
-            communicationConfirmed = true
+        if (data.isEmpty()) {
 
             appendLog(
-                """
-                
-                COMMUNICATION: CONFIRMED
-                REQUESTED SERVICE: ${
-                    frame.rejectedService
-                        ?.let {
-                            "%02X".format(it)
-                        }
-                        ?: "UNKNOWN"
-                }
-                NRC: ${
-                    frame.negativeResponseCode
-                        ?.let {
-                            "%02X".format(it)
-                        }
-                        ?: "UNKNOWN"
-                }
-                """.trimIndent()
+                "2101 INITIAL: empty data."
             )
 
+            return
+        }
+
+        val sample =
+            Kwp2101Sample(
+                label = "INITIAL",
+                data = data.copyOf()
+            )
+
+        replaceSample(
+            sample
+        )
+
+        last2101Sample =
+            sample
+
+        savePersistentSamples()
+
+        appendLog(
+            "INITIAL 2101 SAMPLE SAVED PERMANENTLY."
+        )
+
+        appendLog(
+            Kwp2101Analyzer.createTable(
+                sample
+            )
+        )
+    }
+
+    /*
+     * ============================================================
+     * READ 2101 SAMPLE
+     * ============================================================
+     */
+
+    private fun read2101Sample(
+        label: String,
+        rpm: Int? = null
+    ) {
+
+        if (!kwpReady) {
+
+            appendLog(
+                "READ 2101 ignored: KWP transport is not ready yet."
+            )
+
+            return
+        }
+
+        appendLog(
+            "=============================="
+        )
+
+        appendLog(
+            "READ SAMPLE: $label"
+        )
+
+        if (rpm != null) {
+
+            appendLog(
+                "TARGET RPM: $rpm"
+            )
+        }
+
+        val response =
+            runKwpCommand(
+                "2101"
+            )
+
+        val frames =
+            parseKwpResponse(
+                response
+            )
+
+        val frame =
+            frames.firstOrNull {
+                it.checksumValid &&
+                        it.serviceId == 0x61 &&
+                        it.localId == 0x01
+            }
+
+        if (frame == null) {
+
+            appendLog(
+                "2101: valid 61/01 frame NOT FOUND."
+            )
+
+            return
+        }
+
+        val data =
+            frame.localData.copyOf()
+
+        if (data.isEmpty()) {
+
+            appendLog(
+                "2101: EMPTY LOCAL DATA."
+            )
+
+            return
+        }
+
+        if (data.size != 90) {
+
+            appendLog(
+                "WARNING: expected 90 data bytes, got ${data.size}"
+            )
+        }
+
+        val sample =
+            Kwp2101Sample(
+                label = label,
+                data = data
+            )
+
+        replaceSample(
+            sample
+        )
+
+        last2101Sample =
+            sample
+
+        if (rpm != null) {
+
+            rpm2101Samples.removeAll {
+                it.rpm == rpm
+            }
+
+            rpm2101Samples.add(
+                SavedRpmSample(
+                    rpm = rpm,
+                    sample = sample
+                )
+            )
+
+            rpm2101Samples.sortBy {
+                it.rpm
+            }
+        }
+
+        savePersistentSamples()
+
+        appendLog(
+            "SAMPLE SAVED PERMANENTLY:"
+        )
+
+        appendLog(
+            "LABEL = $label"
+        )
+
+        appendLog(
+            "SIZE = ${data.size}"
+        )
+
+        if (rpm != null) {
+
+            appendLog(
+                "RPM = $rpm"
+            )
+        }
+
+        appendLog(
+            Kwp2101Analyzer.createTable(
+                sample
+            )
+        )
+
+        appendLog(
+            "TOTAL SAVED SAMPLES = ${live2101Samples.size}"
+        )
+
+        appendLog(
+            "TOTAL SAVED RPM POINTS = ${rpm2101Samples.size}"
+        )
+
+        runOnUiThread {
+            updateSampleStatus()
+        }
+    }
+
+    /*
+     * ============================================================
+     * REPLACE SAMPLE
+     * ============================================================
+     */
+
+    private fun replaceSample(
+        sample: Kwp2101Sample
+    ) {
+
+        val index =
+            live2101Samples.indexOfFirst {
+                it.label.equals(
+                    sample.label,
+                    ignoreCase = true
+                )
+            }
+
+        if (index >= 0) {
+
+            live2101Samples[index] =
+                sample
+
         } else {
+
+            live2101Samples.add(
+                sample
+            )
+        }
+    }
+
+    /*
+     * ============================================================
+     * ANALYZE ALL
+     * ============================================================
+     */
+
+    private fun analyzeAllSamples() {
+
+        if (live2101Samples.isEmpty()) {
+
+            appendLog(
+                "NO SAVED 2101 SAMPLES."
+            )
+
+            return
+        }
+
+        val sortedRpm =
+            rpm2101Samples
+                .sortedBy {
+                    it.rpm
+                }
+                .map {
+                    Pair(
+                        it.rpm,
+                        it.sample
+                    )
+                }
+
+        appendLog(
+            "=============================="
+        )
+
+        appendLog(
+            "ANALYZING ALL PERSISTENT DATA"
+        )
+
+        appendLog(
+            "SAMPLES = ${live2101Samples.size}"
+        )
+
+        appendLog(
+            "RPM POINTS = ${sortedRpm.size}"
+        )
+
+        appendLog(
+            Kwp2101Analyzer.analyze(
+                samples =
+                    live2101Samples.toList(),
+                rpmSamples =
+                    sortedRpm
+            )
+        )
+
+        /*
+         * Print all RPM samples in order.
+         */
+
+        appendLog(
+            "========== SAVED RPM MAP =========="
+        )
+
+        for (entry in rpm2101Samples.sortedBy {
+            it.rpm
+        }) {
+
+            appendLog(
+                "${entry.rpm} RPM -> ${entry.sample.label}"
+            )
+        }
+    }
+
+    /*
+     * ============================================================
+     * KWP FRAME REGISTRATION
+     * ============================================================
+     */
+
+    private fun registerKwpFrame(
+        frame: KwpFrame
+    ) {
+
+        validKwpResponses++
+
+        if (
+            frame.serviceId in
+            0x50..0x77
+        ) {
 
             positiveResponses++
 
-            communicationConfirmed = true
+        } else if (
+            frame.serviceId == 0x7F
+        ) {
+
+            negativeResponses++
         }
+
+        communicationConfirmed =
+            communicationConfirmed ||
+                    frame.checksumValid
     }
 
-    // =========================================================
-    // FRAME PRINTER
-    // =========================================================
+    /*
+     * ============================================================
+     * PARSER
+     * ============================================================
+     */
 
-    private fun printKwpFrame(
-        frameNumber: Int,
-        frame: KwpFrame,
-        expectedService: Int?
-    ) {
-
-        appendLog(
-            """
-            
-            FRAME $frameNumber
-            ------------------------------
-            FORMAT: ${"%02X".format(frame.format)}
-            TARGET: ${"%02X".format(frame.target)}
-            SOURCE: ${"%02X".format(frame.source)}
-            HEADER: ${
-                "%02X %02X %02X".format(
-                    frame.format,
-                    frame.target,
-                    frame.source
-                )
-            }
-            FRAME LENGTH FIELD: ${frame.lengthField}
-            PAYLOAD LENGTH: ${frame.payload.size}
-            PAYLOAD: ${formatBytes(frame.payload)}
-            CHECKSUM: ${"%02X".format(frame.checksum)}
-            CALCULATED CHECKSUM: ${
-                "%02X".format(
-                    frame.calculatedChecksum
-                )
-            }
-            CHECKSUM VALID: ${frame.checksumValid}
-            RAW FRAME: ${formatBytes(frame.rawFrame)}
-            """.trimIndent()
-        )
-
-        if (frame.isNegativeResponse) {
-
-            appendLog(
-                """
-                
-                NEGATIVE RESPONSE: YES
-                REJECTED SERVICE: ${
-                    frame.rejectedService
-                        ?.let {
-                            "%02X".format(it)
-                        }
-                        ?: "UNKNOWN"
-                }
-                NRC: ${
-                    frame.negativeResponseCode
-                        ?.let {
-                            "%02X".format(it)
-                        }
-                        ?: "UNKNOWN"
-                }
-                """.trimIndent()
-            )
-
-        } else {
-
-            appendLog(
-                "NEGATIVE RESPONSE: NO"
-            )
-
-            frame.serviceId?.let {
-
-                appendLog(
-                    "POSITIVE SERVICE: ${
-                        "%02X".format(it)
-                    }"
-                )
-
-                if (
-                    expectedService != null &&
-                    it != expectedService
-                ) {
-
-                    appendLog(
-                        "WARNING: EXPECTED SERVICE ${
-                            "%02X".format(expectedService)
-                        }"
-                    )
-                }
-            }
-        }
-
-        if (frame.isNegativeResponse) {
-
-            appendLog(
-                "RESULT: NEGATIVE RESPONSE"
-            )
-
-        } else if (frame.checksumValid) {
-
-            appendLog(
-                "RESULT: POSITIVE RESPONSE"
-            )
-
-        } else {
-
-            appendLog(
-                "RESULT: POSITIVE SERVICE BUT CHECKSUM INVALID"
-            )
-        }
-
-        if (frame.data.isNotEmpty()) {
-
-            appendLog(
-                "DATA: ${formatBytes(frame.data)}"
-            )
-        }
-
-        if (!frame.checksumValid) {
-
-            appendLog(
-                """
-                
-                WARNING: CHECKSUM INVALID
-                EXPECTED: ${
-                    "%02X".format(
-                        frame.calculatedChecksum
-                    )
-                }
-                RECEIVED: ${
-                    "%02X".format(
-                        frame.checksum
-                    )
-                }
-                """.trimIndent()
-            )
-        }
-
-        appendLog("")
-    }
-
-    // =========================================================
-    // KWP PARSER
-    // =========================================================
-
-    private fun parseKwpFrames(
+    private fun parseKwpResponse(
         response: String
     ): List<KwpFrame> {
 
         val candidates =
-            extractKwpHexCandidates(response)
-
-        if (candidates.isEmpty()) {
-            return emptyList()
-        }
+            extractKwpHexCandidates(
+                response
+            )
 
         val result =
             mutableListOf<KwpFrame>()
 
         for (candidate in candidates) {
 
-            var offset = 0
+            val frame =
+                parseOneKwpFrame(
+                    candidate
+                )
 
-            while (offset < candidate.size) {
+            if (frame != null) {
 
-                val remaining =
-                    candidate.subList(
-                        offset,
-                        candidate.size
-                    )
+                result.add(
+                    frame
+                )
 
-                val frame =
-                    parseSingleKwpFrame(
-                        remaining
-                    )
-
-                if (frame == null) {
-                    break
-                }
-
-                result.add(frame)
-
-                val consumed =
-                    frame.rawFrame.size
-
-                if (consumed <= 0) {
-                    break
-                }
-
-                offset += consumed
+                appendFrameLog(
+                    frame
+                )
             }
         }
 
         return result
     }
 
-    // =========================================================
-    // SINGLE FRAME PARSER
-    // =========================================================
-
-    private fun parseSingleKwpFrame(
-        bytes: List<Int>
+    private fun parseOneKwpFrame(
+        bytes: ByteArray
     ): KwpFrame? {
 
         if (bytes.size < 5) {
@@ -1070,603 +2424,386 @@ class KwpTestActivity : AppCompatActivity() {
         }
 
         val format =
-            bytes[0]
+            bytes[0].toInt() and 0xFF
 
         val target =
-            bytes[1]
+            bytes[1].toInt() and 0xFF
 
         val source =
-            bytes[2]
+            bytes[2].toInt() and 0xFF
 
-        val lengthInFormat =
-            format and 0x3F
+        val lengthField =
+            bytes[3].toInt() and 0xFF
 
-        val extended =
-            lengthInFormat == 0
+        val payloadLength =
+            when {
 
-        val headerSize: Int
-        val dataLength: Int
+                (format and 0xC0) == 0x80 ->
+                    lengthField
 
-        if (extended) {
+                (format and 0xC0) == 0xC0 ->
+                    lengthField
 
-            if (bytes.size < 5) {
-                return null
+                else ->
+                    return null
             }
 
-            headerSize = 4
-            dataLength = bytes[3]
+        val payloadStart =
+            4
 
-        } else {
-
-            headerSize = 3
-            dataLength = lengthInFormat
-        }
-
-        if (dataLength <= 0) {
-            return null
-        }
-
-        val totalFrameLength =
-            headerSize +
-                    dataLength +
-                    1
+        val payloadEnd =
+            payloadStart +
+                    payloadLength
 
         if (
-            bytes.size <
-            totalFrameLength
+            payloadEnd >= bytes.size
         ) {
             return null
         }
 
-        val dataStart =
-            headerSize
-
-        val dataEnd =
-            dataStart +
-                    dataLength
-
-        if (dataEnd >= bytes.size) {
-            return null
-        }
-
         val payload =
-            bytes.subList(
-                dataStart,
-                dataEnd
-            ).toList()
+            bytes.copyOfRange(
+                payloadStart,
+                payloadEnd
+            )
 
         val checksum =
-            bytes[dataEnd]
+            bytes[payloadEnd]
+                .toInt() and 0xFF
 
-        val calculatedChecksum =
-            bytes
-                .subList(
-                    0,
-                    dataEnd
-                )
-                .sum()
-                .and(0xFF)
+        var sum =
+            0
 
-        val checksumValid =
-            calculatedChecksum ==
-                    checksum
+        for (
+        i in 0 until payloadEnd
+        ) {
 
-        val rawFrame =
-            bytes
-                .subList(
-                    0,
-                    totalFrameLength
-                )
-                .toList()
+            sum +=
+                bytes[i].toInt() and 0xFF
+
+            sum =
+                sum and 0xFF
+        }
+
+        val calculated =
+            sum
 
         return KwpFrame(
             format = format,
             target = target,
             source = source,
-            lengthField =
-                if (extended) {
-                    bytes[3]
-                } else {
-                    lengthInFormat
-                },
+            lengthField = lengthField,
             payload = payload,
             checksum = checksum,
-            calculatedChecksum = calculatedChecksum,
-            checksumValid = checksumValid,
-            rawFrame = rawFrame
+            calculatedChecksum = calculated,
+            checksumValid =
+                checksum == calculated,
+            rawFrame =
+                bytes.copyOf()
         )
     }
 
-    // =========================================================
-    // HEX EXTRACTION
-    // =========================================================
+    /*
+     * ============================================================
+     * HEX CANDIDATE EXTRACTION
+     * ============================================================
+     */
 
     private fun extractKwpHexCandidates(
         response: String
-    ): List<List<Int>> {
+    ): List<ByteArray> {
+
+        val clean =
+            response
+                .replace(
+                    "\r",
+                    " "
+                )
+                .replace(
+                    "\n",
+                    " "
+                )
+
+        val tokenRegex =
+            Regex(
+                "(?i)\\b[0-9A-F]{2}\\b"
+            )
+
+        val tokens =
+            tokenRegex
+                .findAll(clean)
+                .map {
+                    it.value
+                }
+                .toList()
+
+        if (tokens.isEmpty()) {
+            return emptyList()
+        }
+
+        val all =
+            ByteArray(
+                tokens.size
+            )
+
+        for (i in tokens.indices) {
+
+            all[i] =
+                tokens[i]
+                    .toInt(16)
+                    .toByte()
+        }
 
         val result =
-            mutableListOf<List<Int>>()
+            mutableListOf<ByteArray>()
 
-        val lines =
-            response
-                .replace("\r", "\n")
-                .split("\n")
+        /*
+         * Search possible KWP frames.
+         */
 
-        val spacedRegex =
-            Regex(
-                """(?i)([0-9a-f]{2}(?:\s+[0-9a-f]{2}){4,})"""
-            )
+        for (start in all.indices) {
 
-        val compactRegex =
-            Regex(
-                """(?i)(?<![0-9a-f])[0-9a-f]{10,}(?![0-9a-f])"""
-            )
+            if (
+                start + 4 >=
+                all.size
+            ) {
+                break
+            }
 
-        for (line in lines) {
+            val format =
+                all[start]
+                    .toInt() and 0xFF
 
-            val trimmed =
-                line.trim()
-
-            if (trimmed.isEmpty()) {
+            if (
+                (format and 0xC0) != 0x80 &&
+                (format and 0xC0) != 0xC0
+            ) {
                 continue
             }
 
-            val spacedMatch =
-                spacedRegex.find(trimmed)
+            val length =
+                all[start + 3]
+                    .toInt() and 0xFF
 
-            if (spacedMatch != null) {
+            val total =
+                5 + length
 
-                val tokens =
-                    spacedMatch.value
-                        .trim()
-                        .split(Regex("\\s+"))
+            if (
+                start + total <=
+                all.size
+            ) {
 
-                val bytes =
-                    tokens.mapNotNull {
-                        try {
-                            it.toInt(16)
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
-
-                if (bytes.size >= 5) {
-                    result.add(bytes)
-                    continue
-                }
+                result.add(
+                    all.copyOfRange(
+                        start,
+                        start + total
+                    )
+                )
             }
+        }
 
-            val compactMatch =
-                compactRegex.find(trimmed)
+        /*
+         * If no structured frame was found,
+         * also try the entire token stream.
+         */
 
-            if (compactMatch != null) {
+        if (
+            result.isEmpty() &&
+            all.size >= 5
+        ) {
 
-                val hex =
-                    compactMatch.value
-
-                if (hex.length % 2 == 0) {
-
-                    val bytes =
-                        mutableListOf<Int>()
-
-                    var i = 0
-
-                    while (i < hex.length) {
-
-                        try {
-
-                            bytes.add(
-                                hex.substring(
-                                    i,
-                                    i + 2
-                                ).toInt(16)
-                            )
-
-                        } catch (_: Exception) {
-
-                            bytes.clear()
-                            break
-                        }
-
-                        i += 2
-                    }
-
-                    if (bytes.size >= 5) {
-                        result.add(bytes)
-                    }
-                }
-            }
+            result.add(
+                all
+            )
         }
 
         return result
     }
 
-    // =========================================================
-    // DTC
-    // =========================================================
+    /*
+     * ============================================================
+     * FRAME LOG
+     * ============================================================
+     */
 
-    private fun runDtcDiscovery() {
-
-        appendLog(
-            """
-            
-            DTC DISCOVERY
-            ==============================
-            
-            SERVICE 13 TEST
-            ------------------------------
-            """.trimIndent()
-        )
-
-        val frames =
-            runKwpCommand(
-                command = "13",
-                info = "KWP DTC read service 13",
-                expectedService = 0x53
-            )
-
-        if (frames.isEmpty()) {
-
-            appendLog(
-                """
-                
-                DTC RESULT:
-                NO KWP FRAME RECEIVED
-                """.trimIndent()
-            )
-
-            return
-        }
-
-        val valid =
-            frames.firstOrNull {
-                it.checksumValid
-            }
-
-        if (valid == null) {
-
-            appendLog(
-                """
-                
-                DTC RESULT:
-                FRAME RECEIVED BUT CHECKSUM INVALID
-                DTC DATA NOT ACCEPTED
-                """.trimIndent()
-            )
-
-            return
-        }
-
-        if (valid.serviceId == 0x53) {
-
-            appendLog(
-                """
-                
-                DTC RESULT:
-                VALID POSITIVE RESPONSE
-                
-                SERVICE: 53
-                DTC DATA:
-                ${formatBytes(valid.data)}
-                """.trimIndent()
-            )
-
-            parseDtcPayload(valid.data)
-
-            return
-        }
-
-        if (
-            valid.isNegativeResponse &&
-            valid.rejectedService == 0x13
-        ) {
-
-            appendLog(
-                """
-                
-                DTC RESULT:
-                SERVICE 13 REJECTED
-                
-                NRC: ${
-                    valid.negativeResponseCode
-                        ?.let {
-                            "%02X".format(it)
-                        }
-                        ?: "UNKNOWN"
-                }
-                """.trimIndent()
-            )
-
-            return
-        }
-
-        if (valid.serviceId == 0x61) {
-
-            appendLog(
-                """
-                
-                DTC RESULT:
-                RESPONSE DOES NOT BELONG TO SERVICE 13
-                
-                RECEIVED SERVICE: 61
-                61 = POSITIVE RESPONSE FOR SERVICE 21
-                
-                POSSIBLE DELAYED 2101 RESPONSE.
-                DTC DATA NOT ACCEPTED.
-                """.trimIndent()
-            )
-
-            return
-        }
-
-        appendLog(
-            """
-            
-            DTC RESULT:
-            UNEXPECTED SERVICE ${
-                valid.serviceId
-                    ?.let {
-                        "%02X".format(it)
-                    }
-                    ?: "UNKNOWN"
-            }
-            
-            DTC DATA NOT ACCEPTED.
-            """.trimIndent()
-        )
-    }
-
-    // =========================================================
-    // DTC PAYLOAD
-    // =========================================================
-
-    private fun parseDtcPayload(
-        data: List<Int>
+    private fun appendFrameLog(
+        frame: KwpFrame
     ) {
 
-        if (data.isEmpty()) {
+        appendLog(
+            "KWP FRAME"
+        )
+
+        appendLog(
+            "FORMAT: " +
+                    hexByte(frame.format)
+        )
+
+        appendLog(
+            "TARGET: " +
+                    hexByte(frame.target)
+        )
+
+        appendLog(
+            "SOURCE: " +
+                    hexByte(frame.source)
+        )
+
+        appendLog(
+            "LENGTH: " +
+                    frame.lengthField
+        )
+
+        appendLog(
+            "SERVICE: " +
+                    if (frame.serviceId >= 0)
+                        hexByte(frame.serviceId)
+                    else
+                        "NONE"
+        )
+
+        if (frame.localId != null) {
 
             appendLog(
-                "DTC PAYLOAD IS EMPTY"
-            )
-
-            return
-        }
-
-        appendLog(
-            """
-            
-            DTC RAW PAYLOAD
-            ------------------------------
-            ${formatBytes(data)}
-            """.trimIndent()
-        )
-
-        appendLog(
-            """
-            
-            DTC DECODER:
-            RAW DATA PRESERVED.
-            ECU-SPECIFIC DTC FORMAT NOT ASSUMED.
-            """.trimIndent()
-        )
-    }
-
-    // =========================================================
-    // FINAL RESULT
-    // =========================================================
-
-    private fun printFinalResult() {
-
-        appendLog(
-            """
-            
-            ==============================
-            FINAL RESULT
-            ==============================
-            COMMUNICATION: ${
-                if (communicationConfirmed) {
-                    "CONFIRMED"
-                } else {
-                    "NOT CONFIRMED"
-                }
-            }
-            REQUESTED PROTOCOL: $SAVED_PROTOCOL
-            PROTOCOL: $protocolText
-            PROTOCOL NUMBER: $protocolNumber
-            ECU ADDRESS: $ECU_ADDRESS
-            ECU HEADER: $ECU_HEADER
-            TOTAL COMMANDS: $commandCounter
-            VALID KWP RESPONSES: $validKwpResponses
-            POSITIVE RESPONSES: $positiveResponses
-            NEGATIVE RESPONSES: $negativeResponses
-            
-            FINGERPRINT COMMANDS
-            ------------------------------
-            """.trimIndent()
-        )
-
-        for ((command, result) in fingerprintResults) {
-
-            val frame =
-                result.frame
-
-            if (
-                result.valid &&
-                frame != null
-            ) {
-
-                appendLog(
-                    "$command = POSITIVE service=${
-                        "%02X".format(
-                            frame.serviceId
+                "LOCAL ID: " +
+                        hexByte(
+                            frame.localId!!
                         )
-                    }"
-                )
-
-            } else if (
-                frame != null &&
-                !frame.checksumValid
-            ) {
-
-                appendLog(
-                    "$command = INVALID CHECKSUM"
-                )
-
-            } else {
-
-                appendLog(
-                    "$command = NO VALID RESPONSE"
-                )
-            }
-        }
-
-        appendLog(
-            """
-            
-            IDENTIFICATION STATUS
-            ------------------------------
-            1A90: ${
-                fingerprintResults["1A90"]
-                    ?.let {
-                        if (it.valid) {
-                            "SUPPORTED"
-                        } else {
-                            "NOT CONFIRMED"
-                        }
-                    }
-                    ?: "NOT TESTED"
-            }
-            
-            1A91: ${
-                fingerprintResults["1A91"]
-                    ?.let {
-                        if (it.valid) {
-                            "SUPPORTED"
-                        } else {
-                            "NOT CONFIRMED"
-                        }
-                    }
-                    ?: "NOT TESTED"
-            }
-            
-            2101: ${
-                fingerprintResults["2101"]
-                    ?.let {
-                        if (it.valid) {
-                            "SUPPORTED / CHECKSUM VALID"
-                        } else {
-                            "NOT CONFIRMED"
-                        }
-                    }
-                    ?: "NOT TESTED"
-            }
-            """.trimIndent()
-        )
-
-        val id90 =
-            fingerprintResults["1A90"]
-                ?.frame
-
-        val id91 =
-            fingerprintResults["1A91"]
-                ?.frame
-
-        if (
-            id90 != null &&
-            id90.checksumValid
-        ) {
-
-            appendLog(
-                "1A90 RAW DATA: ${formatBytes(id90.data)}"
-            )
-        }
-
-        if (
-            id91 != null &&
-            id91.checksumValid
-        ) {
-
-            appendLog(
-                "1A91 RAW DATA: ${formatBytes(id91.data)}"
             )
         }
 
         appendLog(
-            """
-            
-            RAW IDENTIFICATION DATA WAS PRESERVED.
-            No ECU identity is guessed from FF-filled fields.
-            
-            DTC STATUS
-            ------------------------------
-            DTC decoding only accepts a checksum-valid
-            response belonging to service 13.
-            
-            No alternate DTC command is guessed.
-            
-            NEXT STEP
-            ------------------------------
-            Validate the corrected extended-length parser
-            against the 2101 checksum.
-            """.trimIndent()
+            "DATA SIZE: " +
+                    frame.localData.size
         )
-    }
 
-    // =========================================================
-    // BYTE FORMAT
-    // =========================================================
+        appendLog(
+            "CHECKSUM RX: " +
+                    if (frame.checksum != null)
+                        hexByte(
+                            frame.checksum!!
+                        )
+                    else
+                        "NONE"
+        )
 
-    private fun formatBytes(
-        bytes: List<Int>
-    ): String {
+        appendLog(
+            "CHECKSUM CALC: " +
+                    if (
+                        frame.calculatedChecksum != null
+                    )
+                        hexByte(
+                            frame.calculatedChecksum!!
+                        )
+                    else
+                        "NONE"
+        )
 
-        return bytes.joinToString(" ") {
-            "%02X".format(
-                it and 0xFF
+        appendLog(
+            "CHECKSUM VALID: " +
+                    frame.checksumValid
+        )
+
+        appendLog(
+            "RAW: " +
+                    bytesToHex(
+                        frame.rawFrame
+                    )
+        )
+
+        if (
+            frame.serviceId == 0x7F
+        ) {
+
+            appendLog(
+                "NEGATIVE SERVICE: " +
+                        (
+                                frame.negativeService
+                                    ?.let {
+                                        hexByte(it)
+                                    }
+                                    ?: "NONE"
+                                )
+            )
+
+            appendLog(
+                "NEGATIVE CODE: " +
+                        (
+                                frame.negativeCode
+                                    ?.let {
+                                        hexByte(it)
+                                    }
+                                    ?: "NONE"
+                                )
             )
         }
     }
 
-    // =========================================================
-    // UI LOG
-    // =========================================================
+    /*
+     * ============================================================
+     * LOG
+     * ============================================================
+     */
 
     private fun appendLog(
-        message: String
+        text: String
     ) {
 
         runOnUiThread {
 
+            if (!::outputText.isInitialized) {
+                return@runOnUiThread
+            }
+
             outputText.append(
-                message +
-                        if (message.endsWith("\n")) {
-                            ""
-                        } else {
-                            "\n"
-                        }
+                text
             )
+
+            outputText.append(
+                "\n"
+            )
+
+            val scrollParent =
+                outputText.parent?.parent
+
+            if (
+                scrollParent is ScrollView
+            ) {
+
+                scrollParent.post {
+                    scrollParent.fullScroll(
+                        ScrollView.FOCUS_DOWN
+                    )
+                }
+            }
         }
     }
 
-    // =========================================================
-    // CLEANUP
-    // =========================================================
+    /*
+     * ============================================================
+     * HELPERS
+     * ============================================================
+     */
 
-    override fun onDestroy() {
+    private fun hexByte(
+        value: Int
+    ): String {
 
-        /*
-         * IMPORTANT:
-         *
-         * Do NOT disconnect here.
-         *
-         * KWP screen is only a test/explorer screen.
-         * The ELM327 Wi-Fi connection belongs to
-         * YadraConnectionManager and must remain alive
-         * after leaving this Activity.
-         */
+        return String.format(
+            Locale.US,
+            "%02X",
+            value and 0xFF
+        )
+    }
 
-        super.onDestroy()
+    private fun weightParams(): String {
+
+        return """
+            KWP FAST
+            Protocol: $SAVED_PROTOCOL
+            ECU: $ECU_ADDRESS
+            2101 local ID: 01
+            Expected response: 61 01
+        """.trimIndent()
     }
 }

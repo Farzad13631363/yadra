@@ -848,6 +848,20 @@ class TripActivity : AppCompatActivity() {
             return
         }
 
+        /*
+         * قبل از شروع جدید، یک بار دیگر
+         * وضعیت Service را بررسی می‌کنیم.
+         */
+        val serviceSnapshot =
+            TripLocationService.getSnapshot()
+
+        if (serviceSnapshot.running) {
+
+            syncTripStateFromService()
+
+            return
+        }
+
         waitingForCurrentLocation =
             false
 
@@ -916,14 +930,232 @@ class TripActivity : AppCompatActivity() {
 
     /*
      * ==========================================
+     * SYNC STATE FROM SERVICE
+     * ==========================================
+     */
+
+    private fun syncTripStateFromService() {
+
+        val snapshot =
+            TripLocationService.getSnapshot()
+
+        /*
+         * --------------------------------
+         * SERVICE NOT RUNNING
+         * --------------------------------
+         */
+
+        if (!snapshot.running) {
+
+            tripRunning =
+                false
+
+            btnStartStopTrip.text =
+                "شروع سفر"
+
+            btnStartStopTrip.setTextColor(
+                Color.WHITE
+            )
+
+            /*
+             * اگر هنوز داده‌ای در Activity نداریم،
+             * UI را به حالت آماده برگردان.
+             */
+            if (
+                currentDuration <= 0L &&
+                currentDistance <= 0f
+            ) {
+
+                tvTripStatus.text =
+                    "آماده شروع سفر"
+
+                tvTripStatus.setTextColor(
+                    Color.parseColor(
+                        TEXT_GRAY
+                    )
+                )
+            }
+
+            return
+        }
+
+        /*
+         * --------------------------------
+         * SERVICE IS RUNNING
+         * --------------------------------
+         */
+
+        tripRunning =
+            true
+
+        currentSpeed =
+            snapshot.speed
+
+        currentDistance =
+            snapshot.distance
+
+        currentDuration =
+            snapshot.duration
+
+        currentMaxSpeed =
+            snapshot.maxSpeed
+
+        currentAverageSpeed =
+            snapshot.averageSpeed
+
+        updateTripUI(
+            currentSpeed,
+            currentDistance,
+            currentMaxSpeed,
+            currentAverageSpeed,
+            currentDuration
+        )
+
+        btnStartStopTrip.text =
+            "پایان سفر"
+
+        btnStartStopTrip.setTextColor(
+            Color.WHITE
+        )
+
+        tvTripStatus.text =
+            "سفر در حال ثبت است"
+
+        tvTripStatus.setTextColor(
+            Color.parseColor(
+                ORANGE
+            )
+        )
+
+        /*
+         * --------------------------------
+         * RESTORE LAST VEHICLE LOCATION
+         * --------------------------------
+         */
+
+        if (
+            !snapshot.latitude.isNaN() &&
+            !snapshot.longitude.isNaN()
+        ) {
+
+            lastLatitude =
+                snapshot.latitude
+
+            lastLongitude =
+                snapshot.longitude
+
+            val point =
+                GeoPoint(
+                    snapshot.latitude,
+                    snapshot.longitude
+                )
+
+            vehicleMarker.position =
+                point
+
+            vehicleMarker.isEnabled =
+                true
+
+            /*
+             * هنگام ورود مجدد به صفحه،
+             * خودرو را روی نقشه نشان بده.
+             */
+            followVehicle =
+                true
+
+            tripMap.controller.animateTo(
+                point
+            )
+
+            tripMap.controller.setZoom(
+                17.0
+            )
+
+            tripMap.invalidate()
+        }
+    }
+
+    /*
+     * ==========================================
      * STOP TRIP
      * ==========================================
      */
 
     private fun stopTrip() {
 
+        /*
+         * خیلی مهم:
+         *
+         * قبل از متوقف کردن Service،
+         * آخرین اطلاعات آن را می‌گیریم.
+         *
+         * این قسمت مشکل اصلی ذخیره نشدن
+         * سفر بعد از ورود مجدد را حل می‌کند.
+         */
+        val snapshot =
+            TripLocationService.getSnapshot()
+
+        if (snapshot.running) {
+
+            currentSpeed =
+                snapshot.speed
+
+            currentDistance =
+                snapshot.distance
+
+            currentDuration =
+                snapshot.duration
+
+            currentMaxSpeed =
+                snapshot.maxSpeed
+
+            currentAverageSpeed =
+                snapshot.averageSpeed
+
+            if (
+                !snapshot.latitude.isNaN() &&
+                !snapshot.longitude.isNaN()
+            ) {
+
+                lastLatitude =
+                    snapshot.latitude
+
+                lastLongitude =
+                    snapshot.longitude
+
+                val point =
+                    GeoPoint(
+                        snapshot.latitude,
+                        snapshot.longitude
+                    )
+
+                vehicleMarker.position =
+                    point
+
+                vehicleMarker.isEnabled =
+                    true
+            }
+
+            updateTripUI(
+                currentSpeed,
+                currentDistance,
+                currentMaxSpeed,
+                currentAverageSpeed,
+                currentDuration
+            )
+        }
+
+        /*
+         * حالا Activity دیگر در حالت سفر نیست.
+         */
         tripRunning =
             false
+
+        /*
+         * --------------------------------
+         * STOP SERVICE
+         * --------------------------------
+         */
 
         val serviceIntent =
             Intent(
@@ -939,6 +1171,12 @@ class TripActivity : AppCompatActivity() {
             serviceIntent
         )
 
+        /*
+         * --------------------------------
+         * UI
+         * --------------------------------
+         */
+
         tvTripStatus.text =
             "سفر پایان یافت"
 
@@ -951,9 +1189,16 @@ class TripActivity : AppCompatActivity() {
         btnStartStopTrip.text =
             "شروع سفر"
 
+        /*
+         * --------------------------------
+         * CHECK DATA
+         * --------------------------------
+         */
+
         if (
             currentDuration <= 0L &&
             currentDistance <= 0f &&
+            currentMaxSpeed <= 0f &&
             tripPoints.isEmpty()
         ) {
 
@@ -965,6 +1210,12 @@ class TripActivity : AppCompatActivity() {
 
             return
         }
+
+        /*
+         * --------------------------------
+         * SAVE DIALOG
+         * --------------------------------
+         */
 
         showSaveTripDialog()
     }
@@ -1243,6 +1494,21 @@ class TripActivity : AppCompatActivity() {
         resetTripUI()
 
         clearTripRoute()
+
+        currentSpeed =
+            0f
+
+        currentDistance =
+            0f
+
+        currentDuration =
+            0L
+
+        currentMaxSpeed =
+            0f
+
+        currentAverageSpeed =
+            0f
 
         followVehicle =
             false
@@ -1797,12 +2063,6 @@ class TripActivity : AppCompatActivity() {
                 ""
             ).trim()
 
-        /*
-         * ==========================================
-         * DETAILS TEXT
-         * ==========================================
-         */
-
         val details =
             """
             مسافت:
@@ -1826,12 +2086,6 @@ class TripActivity : AppCompatActivity() {
                 averageSpeed
             )
 
-        /*
-         * ==========================================
-         * DATE CONTAINER
-         * ==========================================
-         */
-
         val mainContainer =
             LinearLayout(this)
 
@@ -1844,10 +2098,6 @@ class TripActivity : AppCompatActivity() {
             30.dp(),
             10.dp()
         )
-
-        /*
-         * Details
-         */
 
         val detailsText =
             TextView(this)
@@ -1868,12 +2118,6 @@ class TripActivity : AppCompatActivity() {
         mainContainer.addView(
             detailsText
         )
-
-        /*
-         * ==========================================
-         * DATE TITLE
-         * ==========================================
-         */
 
         val dateTitle =
             TextView(this)
@@ -1912,12 +2156,6 @@ class TripActivity : AppCompatActivity() {
             dateTitle,
             dateTitleParams
         )
-
-        /*
-         * ==========================================
-         * DATE LINES
-         * ==========================================
-         */
 
         val dateLines =
             date.split("\n")
@@ -2026,12 +2264,6 @@ class TripActivity : AppCompatActivity() {
             gregorianText
         )
 
-        /*
-         * ==========================================
-         * COMMENT
-         * ==========================================
-         */
-
         val commentTitle =
             TextView(this)
 
@@ -2098,12 +2330,6 @@ class TripActivity : AppCompatActivity() {
         mainContainer.addView(
             commentText
         )
-
-        /*
-         * ==========================================
-         * DIALOG
-         * ==========================================
-         */
 
         val dialog =
             AlertDialog.Builder(
@@ -2527,6 +2753,17 @@ class TripActivity : AppCompatActivity() {
             filter,
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+
+        /*
+         * ==========================================
+         * مهم‌ترین تغییر:
+         *
+         * بعد از ورود مجدد به Activity،
+         * وضعیت واقعی Service خوانده می‌شود.
+         * ==========================================
+         */
+
+        syncTripStateFromService()
     }
 
     /*
@@ -2591,6 +2828,13 @@ class TripActivity : AppCompatActivity() {
         )
 
         stopTemporaryLocationUpdates()
+
+        /*
+         * عمداً Service را متوقف نمی‌کنیم.
+         *
+         * بنابراین خروج از صفحه Trip
+         * باعث پایان سفر نمی‌شود.
+         */
 
         super.onDestroy()
     }

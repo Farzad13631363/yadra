@@ -1,6 +1,6 @@
 package com.example.yadra
 
-import java.util.UUID
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -15,6 +15,7 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import java.util.UUID
 import java.util.concurrent.Executors
 
 class UnknownEcuScannerActivity : AppCompatActivity() {
@@ -37,6 +38,7 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
     private lateinit var btnConnect: Button
     private lateinit var btnScan: Button
     private lateinit var btnDisconnect: Button
+    private lateinit var btnKwp2101Lab: Button
 
     private lateinit var commandScrollView: ScrollView
     private lateinit var commandResultContainer: LinearLayout
@@ -75,9 +77,32 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
 
             runOnUiThread {
 
-                txtStatus.text =
-                    "در حال جستجو...\n" +
-                            "[$current / $total] $code - $name"
+                if (::txtStatus.isInitialized) {
+
+                    txtStatus.text =
+                        "در حال جستجو...\n" +
+                                "[$current / $total] $code - $name"
+                }
+
+                if (::txtProgress.isInitialized) {
+
+                    txtProgress.text =
+                        "[$current / $total] $code - $name"
+                }
+
+                if (::progressBar.isInitialized) {
+
+                    progressBar.progress =
+                        if (total > 0) {
+                            (
+                                    current.toFloat() /
+                                            total.toFloat() *
+                                            100f
+                                    ).toInt()
+                        } else {
+                            0
+                        }
+                }
             }
         }
 
@@ -99,6 +124,10 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+
+        UnknownEcuScanner.setScanProgressListener(
+            null
+        )
 
         executor.shutdownNow()
 
@@ -129,9 +158,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
                 )
             }
 
-        // --------------------------------------------------------
+        // ========================================================
         // TITLE
-        // --------------------------------------------------------
+        // ========================================================
 
         val title =
             TextView(this).apply {
@@ -159,11 +188,13 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
                 )
             }
 
-        root.addView(title)
+        root.addView(
+            title
+        )
 
-        // --------------------------------------------------------
+        // ========================================================
         // STATUS
-        // --------------------------------------------------------
+        // ========================================================
 
         txtStatus =
             TextView(this).apply {
@@ -186,11 +217,13 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
                 )
             }
 
-        root.addView(txtStatus)
+        root.addView(
+            txtStatus
+        )
 
-        // --------------------------------------------------------
-        // ECU CONNECTION STATUS
-        // --------------------------------------------------------
+        // ========================================================
+        // ECU STATUS
+        // ========================================================
 
         txtEcuStatus =
             TextView(this).apply {
@@ -222,9 +255,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             txtEcuStatus
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // PROTOCOL LABEL
-        // --------------------------------------------------------
+        // ========================================================
 
         val protocolLabel =
             TextView(this).apply {
@@ -256,9 +289,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             protocolLabel
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // PROTOCOL SPINNER
-        // --------------------------------------------------------
+        // ========================================================
 
         protocolSpinner =
             Spinner(this).apply {
@@ -276,9 +309,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             )
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // SELECTED PROTOCOL
-        // --------------------------------------------------------
+        // ========================================================
 
         txtSelectedProtocol =
             TextView(this).apply {
@@ -305,9 +338,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             txtSelectedProtocol
         )
 
-        // --------------------------------------------------------
-        // CONNECT BUTTON
-        // --------------------------------------------------------
+        // ========================================================
+        // CONNECT
+        // ========================================================
 
         btnConnect =
             Button(this).apply {
@@ -337,9 +370,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             btnConnect
         )
 
-        // --------------------------------------------------------
-        // AUTO SCAN BUTTON
-        // --------------------------------------------------------
+        // ========================================================
+        // AUTO SCAN
+        // ========================================================
 
         btnScan =
             Button(this).apply {
@@ -365,9 +398,41 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             btnScan
         )
 
-        // --------------------------------------------------------
-        // DISCONNECT / CLEAR BUTTON
-        // --------------------------------------------------------
+        // ========================================================
+        // KWP 2101 LAB
+        // ========================================================
+
+        btnKwp2101Lab =
+            Button(this).apply {
+
+                text =
+                    "KWP 2101 LAB"
+
+                setTextColor(
+                    Color.WHITE
+                )
+
+                setBackgroundColor(
+                    Color.rgb(
+                        0,
+                        90,
+                        180
+                    )
+                )
+
+                setOnClickListener {
+
+                    openKwp2101Lab()
+                }
+            }
+
+        root.addView(
+            btnKwp2101Lab
+        )
+
+        // ========================================================
+        // DISCONNECT
+        // ========================================================
 
         btnDisconnect =
             Button(this).apply {
@@ -397,9 +462,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             btnDisconnect
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // PROGRESS BAR
-        // --------------------------------------------------------
+        // ========================================================
 
         progressBar =
             ProgressBar(
@@ -409,6 +474,7 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             ).apply {
 
                 max = 100
+
                 progress = 0
             }
 
@@ -420,9 +486,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             )
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // PROGRESS TEXT
-        // --------------------------------------------------------
+        // ========================================================
 
         txtProgress =
             TextView(this).apply {
@@ -445,11 +511,13 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
                 )
             }
 
-        root.addView(txtProgress)
+        root.addView(
+            txtProgress
+        )
 
-        // --------------------------------------------------------
+        // ========================================================
         // LAST PROTOCOL
-        // --------------------------------------------------------
+        // ========================================================
 
         txtLastProtocol =
             TextView(this).apply {
@@ -476,9 +544,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             txtLastProtocol
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // MAIN RESULT
-        // --------------------------------------------------------
+        // ========================================================
 
         txtResult =
             TextView(this).apply {
@@ -505,9 +573,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             txtResult
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // INFORMATION TITLE
-        // --------------------------------------------------------
+        // ========================================================
 
         val commandTitle =
             TextView(this).apply {
@@ -535,11 +603,13 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
                 )
             }
 
-        root.addView(commandTitle)
+        root.addView(
+            commandTitle
+        )
 
-        // --------------------------------------------------------
+        // ========================================================
         // RESULT CONTAINER
-        // --------------------------------------------------------
+        // ========================================================
 
         commandResultContainer =
             LinearLayout(this).apply {
@@ -576,6 +646,21 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
         )
 
         setContentView(root)
+    }
+
+    // ============================================================
+    // OPEN KWP 2101 LAB
+    // ============================================================
+
+    private fun openKwp2101Lab() {
+
+        val intent =
+            Intent(
+                this,
+                KwpTestActivity::class.java
+            )
+
+        startActivity(intent)
     }
 
     // ============================================================
@@ -686,7 +771,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
         protocolSpinner.adapter =
             adapter
 
-        protocolSpinner.setSelection(0)
+        protocolSpinner.setSelection(
+            0
+        )
 
         protocolSpinner.onItemSelectedListener =
             object :
@@ -752,7 +839,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             protocolSpinner.selectedItemPosition
 
         if (selectedPosition <= 0) {
+
             startUnknownEcuScan()
+
             return
         }
 
@@ -779,7 +868,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
 
         clearResults()
 
-        setBusy(true)
+        setBusy(
+            true
+        )
 
         progressBar.progress =
             10
@@ -814,7 +905,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
 
             runOnUiThread {
 
-                setBusy(false)
+                setBusy(
+                    false
+                )
 
                 progressBar.progress =
                     100
@@ -862,7 +955,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
 
         clearResults()
 
-        setBusy(true)
+        setBusy(
+            true
+        )
 
         showEcuStatus(
             "در حال اتصال...",
@@ -886,13 +981,27 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
 
             runOnUiThread {
 
+                txtStatus.text =
+                    "در حال جستجو...\n" +
+                            "[$current / $total] $code - $name"
+
                 txtProgress.text =
                     "Searching ECU...\n" +
                             "[$current / $total] $code - $name"
 
                 progressBar.progress =
-                    ((current.toFloat() / total.toFloat()) * 100)
-                        .toInt()
+                    if (total > 0) {
+
+                        (
+                                current.toFloat() /
+                                        total.toFloat() *
+                                        100f
+                                ).toInt()
+
+                    } else {
+
+                        0
+                    }
             }
         }
 
@@ -914,11 +1023,15 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
                     null
                 }
 
-            UnknownEcuScanner.setScanProgressListener(null)
+            UnknownEcuScanner.setScanProgressListener(
+                null
+            )
 
             runOnUiThread {
 
-                setBusy(false)
+                setBusy(
+                    false
+                )
 
                 progressBar.progress =
                     100
@@ -1064,9 +1177,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
         val hardwareVersion =
             fingerprint?.hardwareVersion
 
-        // --------------------------------------------------------
+        // ========================================================
         // RUNTIME STATE
-        // --------------------------------------------------------
+        // ========================================================
 
         EcuRuntimeState.setUnknown(
             protocol = protocol,
@@ -1089,19 +1202,20 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             true
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // SHOW RESULT
-        // --------------------------------------------------------
+        // ========================================================
 
         displayRuntimeEcuState()
 
-        // --------------------------------------------------------
-        // SAVE SUCCESSFUL ECU PROFILE
-        // --------------------------------------------------------
+        // ========================================================
+        // SAVE ECU PROFILE
+        // ========================================================
 
         val savedProfile =
             EcuConnectionProfile(
-                id = UUID.randomUUID().toString(),
+                id =
+                    UUID.randomUUID().toString(),
 
                 source =
                     ConnectionSource
@@ -1208,7 +1322,7 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
     }
 
     // ============================================================
-    // DISPLAY SAVED RUNTIME ECU STATE
+    // DISPLAY RUNTIME ECU STATE
     // ============================================================
 
     private fun displayRuntimeEcuState() {
@@ -1246,9 +1360,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
         val rawResponse =
             EcuRuntimeState.rawResponse
 
-        // --------------------------------------------------------
+        // ========================================================
         // LAST PROTOCOL
-        // --------------------------------------------------------
+        // ========================================================
 
         txtLastProtocol.text =
             if (
@@ -1263,25 +1377,26 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
                 "Detected protocol: $protocol"
             }
 
-        // --------------------------------------------------------
-        // SELECTED PROTOCOL
-        // --------------------------------------------------------
+        // ========================================================
+        // SELECTED
+        // ========================================================
 
         txtSelectedProtocol.text =
             if (
                 protocolName.isNotBlank()
             ) {
 
-                "Selected: $protocol - $protocolName"
+                "Selected: " +
+                        "$protocol - $protocolName"
 
             } else {
 
                 "Selected: $protocol"
             }
 
-        // --------------------------------------------------------
+        // ========================================================
         // MAIN RESULT
-        // --------------------------------------------------------
+        // ========================================================
 
         val resultText =
             buildString {
@@ -1422,9 +1537,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             Color.GREEN
         )
 
-        // --------------------------------------------------------
+        // ========================================================
         // INFORMATION
-        // --------------------------------------------------------
+        // ========================================================
 
         clearResults()
 
@@ -1626,8 +1741,13 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
 
     private fun clearResults() {
 
-        commandResultContainer
-            .removeAllViews()
+        if (
+            ::commandResultContainer.isInitialized
+        ) {
+
+            commandResultContainer
+                .removeAllViews()
+        }
     }
 
     // ============================================================
@@ -1636,9 +1756,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
 
     private fun updateConnectionStatus() {
 
-        // --------------------------------------------------------
-        // UNKNOWN ECU RUNTIME STATE
-        // --------------------------------------------------------
+        // ========================================================
+        // UNKNOWN ECU
+        // ========================================================
 
         if (
             EcuRuntimeState.mode ==
@@ -1683,9 +1803,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             return
         }
 
-        // --------------------------------------------------------
-        // NORMAL ELM CONNECTION STATUS
-        // --------------------------------------------------------
+        // ========================================================
+        // NORMAL ELM CONNECTION
+        // ========================================================
 
         when (
             ConnectionSource.activeSource
@@ -1740,9 +1860,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             }
         }
 
-        // --------------------------------------------------------
+        // ========================================================
         // ECU STATUS
-        // --------------------------------------------------------
+        // ========================================================
 
         if (
             EcuRuntimeState.connected
@@ -1761,9 +1881,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             )
         }
 
-        // --------------------------------------------------------
+        // ========================================================
         // LAST PROTOCOL
-        // --------------------------------------------------------
+        // ========================================================
 
         val protocol =
             EcuRuntimeState.detectedProtocol
@@ -1836,6 +1956,12 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
         color: Int
     ) {
 
+        if (
+            !::txtStatus.isInitialized
+        ) {
+            return
+        }
+
         txtStatus.text =
             "Status: $text"
 
@@ -1853,6 +1979,12 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
         color: Int
     ) {
 
+        if (
+            !::txtEcuStatus.isInitialized
+        ) {
+            return
+        }
+
         txtEcuStatus.text =
             "ECU: $text"
 
@@ -1869,7 +2001,8 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
         busy: Boolean
     ) {
 
-        scanning = busy
+        scanning =
+            busy
 
         btnConnect.isEnabled =
             !busy
@@ -1878,6 +2011,9 @@ class UnknownEcuScannerActivity : AppCompatActivity() {
             !busy
 
         btnDisconnect.isEnabled =
+            !busy
+
+        btnKwp2101Lab.isEnabled =
             !busy
 
         protocolSpinner.isEnabled =

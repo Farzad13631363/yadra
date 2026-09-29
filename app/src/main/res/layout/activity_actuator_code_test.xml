@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="YADRA\nتست کدهای ECU"
+            android:textSize="24sp"
+            android:gravity="center"
+            android:padding="12dp"/>
+
+        <TextView
+            android:id="@+id/txtCodeConnection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="بررسی اتصال..."
+            android:textSize="16sp"
+            android:padding="10dp"/>
+
+        <TextView
+            android:id="@+id/txtCodeTestStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="آماده تست"
+            android:textSize="16sp"
+            android:padding="10dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="نام پارامتر"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="مثلاً دمای آب"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="KWP Command"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeCommand"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2101"
+            android:inputType="textCapCharacters"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Service"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeService"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="21"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Local ID"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeLocalId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="01"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Offset"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeOffset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:inputType="number"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Length"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeLength"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1"
+            android:inputType="number"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unit"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeUnit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="مثلاً °C / RPM / %"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Formula"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeFormula"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="مثلاً RAW - 40"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Raw / Expected Value"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeExpected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="یادداشت"
+            android:textSize="14sp"/>
+
+        <EditText
+            android:id="@+id/edtCodeNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="توضیحات تست"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnRunCode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="▶ اجرای کد"/>
+
+            <Button
+                android:id="@+id/btnClearCode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="پاک کردن"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSaveCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="💾 ذخیره کاندید"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="پاسخ ECU"
+            android:textSize="18sp"
+            android:paddingTop="12dp"/>
+
+        <TextView
+            android:id="@+id/txtCodeResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="پاسخ هنوز دریافت نشده است."
+            android:textIsSelectable="true"
+            android:textSize="14sp"
+            android:padding="10dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnTestNextCode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="تست بعدی"/>
+
+            <Button
+                android:id="@+id/btnRetestRejectedCode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="تست ردشده‌ها"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnAnalyzeCodes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔬 تحلیل کدها"/>
+
+        <TextView
+            android:id="@+id/txtSavedCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="کل: 0"
+            android:textSize="17sp"
+            android:padding="10dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="کدهای ذخیره‌شده"
+            android:textSize="19sp"
+            android:padding="10dp"/>
+
+        <LinearLayout
+            android:id="@+id/savedCodeContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
+
+        <Button
+            android:id="@+id/btnClearCodeDatabase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🗑 پاک کردن بانک کدها"/>
+
+    </LinearLayout>
+
+</ScrollView>

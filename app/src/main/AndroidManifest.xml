@@ -4,7 +4,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- ===================================================== -->
     <!-- Bluetooth -->
+    <!-- ===================================================== -->
+
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:maxSdkVersion="30" />
@@ -19,7 +22,10 @@
     <uses-permission
         android:name="android.permission.BLUETOOTH_CONNECT" />
 
+    <!-- ===================================================== -->
     <!-- Wi-Fi -->
+    <!-- ===================================================== -->
+
     <uses-permission
         android:name="android.permission.ACCESS_WIFI_STATE" />
 
@@ -34,14 +40,20 @@
         android:usesPermissionFlags="neverForLocation"
         tools:targetApi="31" />
 
+    <!-- ===================================================== -->
     <!-- GPS -->
+    <!-- ===================================================== -->
+
     <uses-permission
         android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <uses-permission
         android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- ===================================================== -->
     <!-- Foreground Service -->
+    <!-- ===================================================== -->
+
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE" />
 
@@ -51,13 +63,23 @@
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 
+    <!-- ===================================================== -->
     <!-- Internet -->
+    <!-- ===================================================== -->
+
     <uses-permission
         android:name="android.permission.INTERNET" />
 
+    <!-- ===================================================== -->
     <!-- Notifications -->
+    <!-- ===================================================== -->
+
     <uses-permission
         android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- ===================================================== -->
+    <!-- APPLICATION -->
+    <!-- ===================================================== -->
 
     <application
         android:name=".YadraApplication"
@@ -70,25 +92,39 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Yadra">
 
-        <!-- Splash -->
+        <!-- ================================================= -->
+        <!-- SPLASH -->
+        <!-- ================================================= -->
+
         <activity
             android:name=".SplashActivity"
             android:exported="true">
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+
+                <action
+                    android:name="android.intent.action.MAIN" />
+
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
+
             </intent-filter>
 
         </activity>
 
-        <!-- Main -->
+        <!-- ================================================= -->
+        <!-- MAIN -->
+        <!-- ================================================= -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Existing Activities -->
+        <!-- ================================================= -->
+        <!-- EXISTING ACTIVITIES -->
+        <!-- ================================================= -->
+
         <activity
             android:name=".BuyActivity"
             android:exported="false" />
@@ -121,9 +157,35 @@
             android:name=".EcuTestActivity"
             android:exported="false" />
 
+        <!-- ================================================= -->
+        <!-- UNKNOWN ECU SCANNER -->
+        <!-- ================================================= -->
+
         <activity
             android:name=".UnknownEcuScannerActivity"
             android:exported="false" />
+
+        <!-- ================================================= -->
+        <!-- KWP TEST / 2101 LAB -->
+        <!-- کلاس واقعی: KwpTestActivity -->
+        <!-- ================================================= -->
+
+        <activity
+            android:name=".KwpTestActivity"
+            android:exported="false" />
+
+        <!-- ================================================= -->
+        <!-- ECU CODE TEST -->
+        <!-- کلاس واقعی: ActuatorCodeTestActivity -->
+        <!-- ================================================= -->
+
+        <activity
+            android:name=".ActuatorCodeTestActivity"
+            android:exported="false" />
+
+        <!-- ================================================= -->
+        <!-- OTHER ACTIVITIES -->
+        <!-- ================================================= -->
 
         <activity
             android:name=".ActuatorTestActivity"
@@ -169,18 +231,20 @@
             android:name=".BluetoothActivity"
             android:exported="false" />
 
-        <activity
-            android:name=".KwpTestActivity"
-            android:exported="false" />
+        <!-- ================================================= -->
+        <!-- UNKNOWN ECU SCAN SERVICE -->
+        <!-- ================================================= -->
 
-        <!-- Unknown ECU Scanner -->
         <service
             android:name=".UnknownEcuScanService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
-        <!-- Trip GPS Service -->
+        <!-- ================================================= -->
+        <!-- TRIP GPS SERVICE -->
+        <!-- ================================================= -->
+
         <service
             android:name=".TripLocationService"
             android:enabled="true"

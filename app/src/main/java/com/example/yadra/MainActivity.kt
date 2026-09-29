@@ -172,9 +172,6 @@ class MainActivity : AppCompatActivity() {
 
         // =================================================
         // LOCATION / GPS
-        //
-        // اینجا نقطه اصلی درخواست مجوز است.
-        // دیگر WifiScanActivity مسئول Location نیست.
         // =================================================
 
         checkLocationForAppStart()
@@ -194,8 +191,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkLocationForAppStart() {
 
-        // Android 6.0 / API 23 به بعد
-        if (android.os.Build.VERSION.SDK_INT >=
+        if (
+            android.os.Build.VERSION.SDK_INT >=
             android.os.Build.VERSION_CODES.M
         ) {
 
@@ -213,7 +210,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // مجوز وجود دارد
         checkGpsEnabled()
     }
 
@@ -279,12 +275,10 @@ class MainActivity : AppCompatActivity() {
 
             if (granted) {
 
-                // مجوز داده شد
                 checkGpsEnabled()
 
             } else {
 
-                // مجوز داده نشده
                 updateConnectionLogos()
             }
         }
@@ -361,8 +355,7 @@ class MainActivity : AppCompatActivity() {
                     )
 
                 } catch (_: Exception) {
-
-                    // در صورت عدم وجود صفحه تنظیمات
+                    // Nothing
                 }
             }
             .setNegativeButton(
@@ -916,6 +909,10 @@ class MainActivity : AppCompatActivity() {
         rotatingDashboard.setItems(
             listOf(
 
+                // =================================================
+                // PROFILE
+                // =================================================
+
                 RotatingDashboardView.DashboardItem(
                     title = "Profile",
                     iconRes =
@@ -930,6 +927,10 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                 },
+
+                // =================================================
+                // BUY
+                // =================================================
 
                 RotatingDashboardView.DashboardItem(
                     title = "Buy",
@@ -946,6 +947,10 @@ class MainActivity : AppCompatActivity() {
                     )
                 },
 
+                // =================================================
+                // CONNECTION
+                // =================================================
+
                 RotatingDashboardView.DashboardItem(
                     title = "Connection",
                     iconRes =
@@ -960,6 +965,10 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                 },
+
+                // =================================================
+                // WARNING
+                // =================================================
 
                 RotatingDashboardView.DashboardItem(
                     title = "Warning",
@@ -976,6 +985,10 @@ class MainActivity : AppCompatActivity() {
                     )
                 },
 
+                // =================================================
+                // SENSORS
+                // =================================================
+
                 RotatingDashboardView.DashboardItem(
                     title = "Sensors",
                     iconRes =
@@ -990,6 +1003,10 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                 },
+
+                // =================================================
+                // ERRORS
+                // =================================================
 
                 RotatingDashboardView.DashboardItem(
                     title = "Errors",
@@ -1006,6 +1023,10 @@ class MainActivity : AppCompatActivity() {
                     )
                 },
 
+                // =================================================
+                // ECU
+                // =================================================
+
                 RotatingDashboardView.DashboardItem(
                     title = "ECU",
                     iconRes =
@@ -1020,6 +1041,10 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                 },
+
+                // =================================================
+                // UNKNOWN ECU
+                // =================================================
 
                 RotatingDashboardView.DashboardItem(
                     title = "Unknown ECU",
@@ -1036,6 +1061,10 @@ class MainActivity : AppCompatActivity() {
                     )
                 },
 
+                // =================================================
+                // KWP TEST
+                // =================================================
+
                 RotatingDashboardView.DashboardItem(
                     title = "KWP TEST",
                     iconRes =
@@ -1050,6 +1079,29 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                 },
+
+                // =================================================
+                // ECU CODE TEST
+                // =================================================
+
+                RotatingDashboardView.DashboardItem(
+                    title = "ECU CODE TEST",
+                    iconRes =
+                        RotatingDashboardView
+                            .iconFor("ECU CODE TEST")
+                ) {
+
+                    startActivity(
+                        Intent(
+                            this,
+                            ActuatorCodeTestActivity::class.java
+                        )
+                    )
+                },
+
+                // =================================================
+                // ACTUATORS
+                // =================================================
 
                 RotatingDashboardView.DashboardItem(
                     title = "Actuators",
@@ -1066,6 +1118,10 @@ class MainActivity : AppCompatActivity() {
                     )
                 },
 
+                // =================================================
+                // AI
+                // =================================================
+
                 RotatingDashboardView.DashboardItem(
                     title = "AI",
                     iconRes =
@@ -1080,6 +1136,10 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                 },
+
+                // =================================================
+                // SETTINGS
+                // =================================================
 
                 RotatingDashboardView.DashboardItem(
                     title = "Settings",
@@ -1096,6 +1156,10 @@ class MainActivity : AppCompatActivity() {
                     )
                 },
 
+                // =================================================
+                // TRIP
+                // =================================================
+
                 RotatingDashboardView.DashboardItem(
                     title = "Trip",
                     iconRes =
@@ -1110,6 +1174,10 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                 },
+
+                // =================================================
+                // CHARTS
+                // =================================================
 
                 RotatingDashboardView.DashboardItem(
                     title = "Charts",
@@ -1338,7 +1406,7 @@ class MainActivity : AppCompatActivity() {
         updateConnectionLogos()
 
         // =================================================
-        // بعد از برگشت از صفحه تنظیمات GPS
+        // GPS
         // =================================================
 
         if (!locationPermissionDialogShowing) {

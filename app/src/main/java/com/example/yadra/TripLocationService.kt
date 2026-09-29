@@ -61,23 +61,71 @@ class TripLocationService : Service(), LocationListener {
 
         private const val MIN_DISTANCE =
             1f
+
+        /*
+         * ==========================================
+         * TRIP SNAPSHOT
+         * ==========================================
+         *
+         * این اطلاعات بین TripActivity های مختلف
+         * در همان اجرای برنامه باقی می‌ماند.
+         */
+
+        data class TripSnapshot(
+            val running: Boolean,
+            val speed: Float,
+            val distance: Float,
+            val maxSpeed: Float,
+            val averageSpeed: Float,
+            val duration: Long,
+            val latitude: Double,
+            val longitude: Double
+        )
+
+        @Volatile
+        private var currentSnapshot =
+            TripSnapshot(
+                false,
+                0f,
+                0f,
+                0f,
+                0f,
+                0L,
+                Double.NaN,
+                Double.NaN
+            )
+
+        /*
+         * دریافت وضعیت فعلی سفر
+         */
+        fun getSnapshot(): TripSnapshot {
+
+            return currentSnapshot
+        }
     }
 
     private lateinit var locationManager: LocationManager
 
-    private var tripStarted = false
+    private var tripStarted =
+        false
 
-    private var startTime = 0L
+    private var startTime =
+        0L
 
-    private var lastLocation: Location? = null
+    private var lastLocation:
+            Location? = null
 
-    private var totalDistance = 0f
+    private var totalDistance =
+        0f
 
-    private var maxSpeed = 0f
+    private var maxSpeed =
+        0f
 
-    private var speedSum = 0f
+    private var speedSum =
+        0f
 
-    private var speedCount = 0
+    private var speedCount =
+        0
 
     override fun onCreate() {
 
@@ -115,9 +163,22 @@ class TripLocationService : Service(), LocationListener {
         return START_NOT_STICKY
     }
 
+    /*
+     * ==========================================
+     * START TRIP
+     * ==========================================
+     */
+
     private fun startTripTracking() {
 
+        /*
+         * اگر سفر از قبل فعال است،
+         * دوباره آن را شروع نکن.
+         */
         if (tripStarted) {
+
+            sendCurrentSnapshot()
+
             return
         }
 
@@ -128,20 +189,41 @@ class TripLocationService : Service(), LocationListener {
             return
         }
 
-        tripStarted = true
+        tripStarted =
+            true
 
         startTime =
             System.currentTimeMillis()
 
-        lastLocation = null
+        lastLocation =
+            null
 
-        totalDistance = 0f
+        totalDistance =
+            0f
 
-        maxSpeed = 0f
+        maxSpeed =
+            0f
 
-        speedSum = 0f
+        speedSum =
+            0f
 
-        speedCount = 0
+        speedCount =
+            0
+
+        /*
+         * Snapshot اولیه
+         */
+        currentSnapshot =
+            TripSnapshot(
+                true,
+                0f,
+                0f,
+                0f,
+                0f,
+                0L,
+                Double.NaN,
+                Double.NaN
+            )
 
         startForeground(
             NOTIFICATION_ID,
@@ -151,6 +233,12 @@ class TripLocationService : Service(), LocationListener {
         requestLocationUpdates()
     }
 
+    /*
+     * ==========================================
+     * REQUEST LOCATION
+     * ==========================================
+     */
+
     private fun requestLocationUpdates() {
 
         if (!hasLocationPermission()) {
@@ -159,7 +247,8 @@ class TripLocationService : Service(), LocationListener {
 
         try {
 
-            var lastKnownLocation: Location? = null
+            var lastKnownLocation:
+                    Location? = null
 
             /*
              * --------------------------------
@@ -173,17 +262,11 @@ class TripLocationService : Service(), LocationListener {
                 )
             ) {
 
-                /*
-                 * آخرین موقعیت GPS
-                 */
                 lastKnownLocation =
                     locationManager.getLastKnownLocation(
                         LocationManager.GPS_PROVIDER
                     )
 
-                /*
-                 * درخواست موقعیت جدید GPS
-                 */
                 locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
                     LOCATION_INTERVAL,
@@ -204,11 +287,9 @@ class TripLocationService : Service(), LocationListener {
                 )
             ) {
 
-                /*
-                 * اگر GPS موقعیت قبلی نداشت،
-                 * Network را امتحان کن.
-                 */
-                if (lastKnownLocation == null) {
+                if (
+                    lastKnownLocation == null
+                ) {
 
                     lastKnownLocation =
                         locationManager.getLastKnownLocation(
@@ -216,9 +297,6 @@ class TripLocationService : Service(), LocationListener {
                         )
                 }
 
-                /*
-                 * درخواست موقعیت Network
-                 */
                 locationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER,
                     LOCATION_INTERVAL,
@@ -231,13 +309,11 @@ class TripLocationService : Service(), LocationListener {
              * --------------------------------
              * LAST KNOWN LOCATION
              * --------------------------------
-             *
-             * اگر موقعیت قبلی موجود باشد،
-             * بدون منتظر ماندن برای GPS
-             * آن را به Activity ارسال می‌کنیم.
              */
 
-            if (lastKnownLocation != null) {
+            if (
+                lastKnownLocation != null
+            ) {
 
                 onLocationChanged(
                     lastKnownLocation
@@ -249,6 +325,7 @@ class TripLocationService : Service(), LocationListener {
         ) {
 
             stopSelf()
+
         } catch (
             e: Exception
         ) {
@@ -256,6 +333,12 @@ class TripLocationService : Service(), LocationListener {
             stopSelf()
         }
     }
+
+    /*
+     * ==========================================
+     * STOP TRIP
+     * ==========================================
+     */
 
     private fun stopTripTracking() {
 
@@ -272,8 +355,24 @@ class TripLocationService : Service(), LocationListener {
         } catch (_: Exception) {
         }
 
-        tripStarted = false
+        tripStarted =
+            false
+
+        /*
+         * وضعیت نهایی را نگه می‌داریم،
+         * فقط running را false می‌کنیم.
+         */
+        currentSnapshot =
+            currentSnapshot.copy(
+                running = false
+            )
     }
+
+    /*
+     * ==========================================
+     * LOCATION CHANGED
+     * ==========================================
+     */
 
     override fun onLocationChanged(
         location: Location
@@ -292,9 +391,12 @@ class TripLocationService : Service(), LocationListener {
          * --------------------------------
          */
 
-        var speed = 0f
+        var speed =
+            0f
 
-        if (location.hasSpeed()) {
+        if (
+            location.hasSpeed()
+        ) {
 
             speed =
                 location.speed
@@ -357,6 +459,19 @@ class TripLocationService : Service(), LocationListener {
 
         speedCount++
 
+        val averageSpeed =
+            if (
+                speedCount > 0
+            ) {
+
+                speedSum /
+                        speedCount
+
+            } else {
+
+                0f
+            }
+
         /*
          * --------------------------------
          * SAVE LOCATION
@@ -378,24 +493,7 @@ class TripLocationService : Service(), LocationListener {
 
         /*
          * --------------------------------
-         * AVERAGE SPEED
-         * --------------------------------
-         */
-
-        val averageSpeed =
-            if (speedCount > 0) {
-
-                speedSum /
-                        speedCount
-
-            } else {
-
-                0f
-            }
-
-        /*
-         * --------------------------------
-         * GPS COORDINATES
+         * COORDINATES
          * --------------------------------
          */
 
@@ -406,10 +504,53 @@ class TripLocationService : Service(), LocationListener {
             location.longitude
 
         /*
-         * --------------------------------
-         * SEND DATA TO TRIP ACTIVITY
-         * --------------------------------
+         * ==========================================
+         * UPDATE SNAPSHOT
+         * ==========================================
          */
+
+        currentSnapshot =
+            TripSnapshot(
+                true,
+                speedKmh,
+                totalDistance,
+                maxSpeed,
+                averageSpeed,
+                duration,
+                latitude,
+                longitude
+            )
+
+        /*
+         * ==========================================
+         * SEND TO ACTIVITY
+         * ==========================================
+         */
+
+        sendCurrentSnapshot()
+
+        /*
+         * ==========================================
+         * NOTIFICATION
+         * ==========================================
+         */
+
+        updateNotification(
+            speedKmh,
+            totalDistance
+        )
+    }
+
+    /*
+     * ==========================================
+     * SEND CURRENT SNAPSHOT
+     * ==========================================
+     */
+
+    private fun sendCurrentSnapshot() {
+
+        val snapshot =
+            currentSnapshot
 
         val updateIntent =
             Intent(
@@ -422,57 +563,53 @@ class TripLocationService : Service(), LocationListener {
 
                 putExtra(
                     EXTRA_SPEED,
-                    speedKmh
+                    snapshot.speed
                 )
 
                 putExtra(
                     EXTRA_DISTANCE,
-                    totalDistance
+                    snapshot.distance
                 )
 
                 putExtra(
                     EXTRA_MAX_SPEED,
-                    maxSpeed
+                    snapshot.maxSpeed
                 )
 
                 putExtra(
                     EXTRA_AVERAGE_SPEED,
-                    averageSpeed
+                    snapshot.averageSpeed
                 )
 
                 putExtra(
                     EXTRA_DURATION,
-                    duration
+                    snapshot.duration
                 )
 
                 putExtra(
                     EXTRA_LATITUDE,
-                    latitude
+                    snapshot.latitude
                 )
 
                 putExtra(
                     EXTRA_LONGITUDE,
-                    longitude
+                    snapshot.longitude
                 )
             }
 
         sendBroadcast(
             updateIntent
         )
-
-        /*
-         * --------------------------------
-         * NOTIFICATION
-         * --------------------------------
-         */
-
-        updateNotification(
-            speedKmh,
-            totalDistance
-        )
     }
 
-    private fun createNotification(): Notification {
+    /*
+     * ==========================================
+     * NOTIFICATION
+     * ==========================================
+     */
+
+    private fun createNotification():
+            Notification {
 
         return NotificationCompat.Builder(
             this,
@@ -541,6 +678,12 @@ class TripLocationService : Service(), LocationListener {
         )
     }
 
+    /*
+     * ==========================================
+     * NOTIFICATION CHANNEL
+     * ==========================================
+     */
+
     private fun createNotificationChannel() {
 
         if (
@@ -569,7 +712,14 @@ class TripLocationService : Service(), LocationListener {
         }
     }
 
-    private fun hasLocationPermission(): Boolean {
+    /*
+     * ==========================================
+     * LOCATION PERMISSION
+     * ==========================================
+     */
+
+    private fun hasLocationPermission():
+            Boolean {
 
         val fineLocation =
             ActivityCompat.checkSelfPermission(
@@ -589,6 +739,12 @@ class TripLocationService : Service(), LocationListener {
                 coarseLocation
     }
 
+    /*
+     * ==========================================
+     * PROVIDER CALLBACKS
+     * ==========================================
+     */
+
     override fun onProviderEnabled(
         provider: String
     ) {
@@ -599,6 +755,7 @@ class TripLocationService : Service(), LocationListener {
     ) {
     }
 
+    @Suppress("DEPRECATION")
     override fun onStatusChanged(
         provider: String?,
         status: Int,
@@ -606,12 +763,24 @@ class TripLocationService : Service(), LocationListener {
     ) {
     }
 
+    /*
+     * ==========================================
+     * BIND
+     * ==========================================
+     */
+
     override fun onBind(
         intent: Intent?
     ): IBinder? {
 
         return null
     }
+
+    /*
+     * ==========================================
+     * DESTROY
+     * ==========================================
+     */
 
     override fun onDestroy() {
 
@@ -624,7 +793,13 @@ class TripLocationService : Service(), LocationListener {
         } catch (_: Exception) {
         }
 
-        tripStarted = false
+        tripStarted =
+            false
+
+        currentSnapshot =
+            currentSnapshot.copy(
+                running = false
+            )
 
         super.onDestroy()
     }
