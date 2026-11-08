@@ -122,38 +122,21 @@ object YadraConnectionManager {
 
         try {
 
-            /*
-             * Android 10+:
-             *
-             * WifiScanActivity receives the fresh Network
-             * from WifiNetworkSpecifier and passes it here.
-             *
-             * Therefore we use Network.socketFactory.
-             */
+            // Route only the diagnostic socket over Wi-Fi. Binding the whole
+            // process would also send license traffic to the offline adapter.
+            val diagnosticNetwork = network
             val newSocket: Socket =
-                if (
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                    network != null
-                ) {
+                if (diagnosticNetwork != null) {
 
                     Log.d(
                         TAG,
-                        "Using Network.socketFactory: $network"
+                        "Using Network.socketFactory: $diagnosticNetwork"
                     )
 
-                    network!!.socketFactory.createSocket()
+                    diagnosticNetwork.socketFactory.createSocket()
 
                 } else {
 
-                    /*
-                     * Android 6 - Android 9:
-                     *
-                     * WifiScanActivity already calls:
-                     *
-                     * connectivityManager.bindProcessToNetwork(network)
-                     *
-                     * Therefore NORMAL Socket() is intentional.
-                     */
                     Log.d(
                         TAG,
                         "Using normal Socket() on API ${Build.VERSION.SDK_INT}"

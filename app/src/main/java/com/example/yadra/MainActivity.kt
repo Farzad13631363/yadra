@@ -18,6 +18,7 @@ import android.widget.AutoCompleteTextView
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
@@ -25,7 +26,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
-class MainActivity : AppCompatActivity() {
+open class MainActivity : AppCompatActivity() {
 
     private lateinit var rotatingDashboard: RotatingDashboardView
     private lateinit var txtDashboardStatus: TextView
@@ -893,7 +894,8 @@ class MainActivity : AppCompatActivity() {
             )
 
         val professionalMode =
-            savedMode == "professional"
+            savedMode == "professional" &&
+                com.example.yadra.license.LicenseManager.isActive(this)
 
         rotatingDashboard.setProfessionalMode(
             professionalMode
@@ -904,9 +906,26 @@ class MainActivity : AppCompatActivity() {
     // DASHBOARD
     // =====================================================
 
-    private fun setupRotatingDashboard() {
+    private val dashboardLicenseListener: () -> Unit = {
+        runOnUiThread {
+            if (!isDestroyed) {
+                rotatingDashboard.refreshLicenseState()
+                applyDashboardMode()
+            }
+        }
+    }
 
-        rotatingDashboard.setItems(
+    private fun setupRotatingDashboard() {
+        com.example.yadra.license.LicenseManager.addVerificationListener(dashboardLicenseListener)
+        rotatingDashboard.setOnConnectionBlockedItemClickListener {
+            Toast.makeText(this, "Disconnect the current ECU before switching ECU modes.", Toast.LENGTH_LONG).show()
+        }
+
+
+        rotatingDashboard.setItems(dashboardItems())
+    }
+
+    internal fun dashboardItems(): List<RotatingDashboardView.DashboardItem> =
             listOf(
 
                 // =================================================
@@ -914,6 +933,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.PROFILE,
                     title = "Profile",
                     iconRes =
                         RotatingDashboardView
@@ -933,6 +953,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.BUY,
                     title = "Buy",
                     iconRes =
                         RotatingDashboardView
@@ -952,6 +973,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.CONNECTION,
                     title = "Connection",
                     iconRes =
                         RotatingDashboardView
@@ -971,6 +993,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.WARNING,
                     title = "Warning",
                     iconRes =
                         RotatingDashboardView
@@ -990,6 +1013,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.SENSORS,
                     title = "Sensors",
                     iconRes =
                         RotatingDashboardView
@@ -1009,6 +1033,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.ERRORS,
                     title = "Errors",
                     iconRes =
                         RotatingDashboardView
@@ -1028,6 +1053,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.ECU,
                     title = "ECU",
                     iconRes =
                         RotatingDashboardView
@@ -1047,6 +1073,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.UNKNOWN_ECU,
                     title = "Unknown ECU",
                     iconRes =
                         RotatingDashboardView
@@ -1066,6 +1093,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.KWP_TEST,
                     title = "KWP TEST",
                     iconRes =
                         RotatingDashboardView
@@ -1085,6 +1113,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.ECU_CODE_TEST,
                     title = "ECU CODE TEST",
                     iconRes =
                         RotatingDashboardView
@@ -1104,6 +1133,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.ACTUATORS,
                     title = "Actuators",
                     iconRes =
                         RotatingDashboardView
@@ -1123,6 +1153,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.AI,
                     title = "AI",
                     iconRes =
                         RotatingDashboardView
@@ -1142,6 +1173,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.SETTINGS,
                     title = "Settings",
                     iconRes =
                         RotatingDashboardView
@@ -1161,6 +1193,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.TRIP,
                     title = "Trip",
                     iconRes =
                         RotatingDashboardView
@@ -1180,6 +1213,7 @@ class MainActivity : AppCompatActivity() {
                 // =================================================
 
                 RotatingDashboardView.DashboardItem(
+                    id = com.example.yadra.license.DashboardItemId.CHARTS,
                     title = "Charts",
                     iconRes =
                         RotatingDashboardView
@@ -1192,10 +1226,9 @@ class MainActivity : AppCompatActivity() {
                             ChartsActivity::class.java
                         )
                     )
+
                 }
             )
-        )
-    }
 
     // =====================================================
     // UPDATE DASHBOARD RPM
@@ -1398,6 +1431,21 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
 
         super.onResume()
+        // Includes return from BuyActivity: redraw using the current server-verified proof.
+        rotatingDashboard.refreshLicenseState()
+        rotatingDashboard.setOnLockedItemClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("YADRA")
+                .setMessage("برای استفاده از این قابلیت، ابتدا لایسنس را فعال کنید.")
+                .setPositiveButton("خرید / فعال‌سازی") { _, _ ->
+                    startActivity(
+                        Intent(this, BuyActivity::class.java)
+                    )
+                }
+                .setNegativeButton("بستن", null)
+                .show()
+        }
+
 
         updateHomeVehicleProfile()
 
@@ -1428,6 +1476,7 @@ class MainActivity : AppCompatActivity() {
     // =====================================================
 
     override fun onDestroy() {
+        com.example.yadra.license.LicenseManager.removeVerificationListener(dashboardLicenseListener)
 
         rpmHandler.removeCallbacks(
             rpmRunnable

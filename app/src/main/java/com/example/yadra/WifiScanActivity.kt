@@ -1905,94 +1905,6 @@ class WifiScanActivity : AppCompatActivity() {
     }
 
     // =========================================================
-    // BIND PROCESS TO WIFI - ANDROID 6+
-    // =========================================================
-
-    private fun bindProcessToWifi(): Boolean {
-
-        if (
-            Build.VERSION.SDK_INT <
-            Build.VERSION_CODES.M
-        ) {
-            return true
-        }
-
-        if (processBoundToWifi) {
-
-            Log.d(
-                TAG,
-                "Process is already bound to Wi-Fi"
-            )
-
-            return true
-        }
-
-        val network =
-            wifiNetwork
-                ?: findWifiNetwork()
-
-        if (network == null) {
-
-            Log.e(
-                TAG,
-                "Cannot bind process: Wi-Fi Network is null"
-            )
-
-            return false
-        }
-
-        return try {
-
-            Log.d(
-                TAG,
-                "Binding process to Wi-Fi Network: $network"
-            )
-
-            val result =
-                connectivityManager
-                    .bindProcessToNetwork(network)
-
-            Log.d(
-                TAG,
-                "bindProcessToNetwork result = $result"
-            )
-
-            if (result) {
-
-                processBoundToWifi = true
-
-                Log.d(
-                    TAG,
-                    "Process successfully bound to Wi-Fi: $network"
-                )
-
-            } else {
-
-                processBoundToWifi = false
-
-                Log.e(
-                    TAG,
-                    "Process Wi-Fi binding failed: $network"
-                )
-            }
-
-            result
-
-        } catch (e: Exception) {
-
-            processBoundToWifi = false
-
-            Log.e(
-                TAG,
-                "bindProcessToNetwork failed",
-                e
-            )
-
-            false
-        }
-    }
-
-    // =========================================================
     // API 21-22 WIFI BIND
     // =========================================================
 
@@ -2185,22 +2097,6 @@ class WifiScanActivity : AppCompatActivity() {
                 TAG,
                 "Selected Wi-Fi Network = $network"
             )
-
-            if (!bindProcessToWifi()) {
-
-                allowAutoConnect = false
-
-                Log.e(
-                    TAG,
-                    "ELM connection aborted: unable to bind process to Wi-Fi"
-                )
-
-                txtScanStatus.setText(
-                    R.string.wifi_network_not_ready
-                )
-
-                return
-            }
 
             YadraConnectionManager
                 .setNetwork(network)
@@ -2768,10 +2664,6 @@ class WifiScanActivity : AppCompatActivity() {
                         ?: return
 
                 wifiNetwork = network
-
-                if (!bindProcessToWifi()) {
-                    return
-                }
 
                 YadraConnectionManager
                     .setNetwork(network)

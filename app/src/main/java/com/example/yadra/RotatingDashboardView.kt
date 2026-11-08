@@ -28,6 +28,7 @@ class RotatingDashboardView @JvmOverloads constructor(
 ) : View(context, attrs) {
 
     data class DashboardItem(
+        val id: com.example.yadra.license.DashboardItemId,
         val title: String,
         val iconRes: Int,
         val onClick: () -> Unit
@@ -39,6 +40,9 @@ class RotatingDashboardView @JvmOverloads constructor(
     private var selectedIndex = 0
     private var rpm: Int? = null
 
+    // وضعیت لایسنس؛ تا زمان تأیید سرور قفل است
+
+    private var onLockedItemClick: (() -> Unit)? = null
     // true = Professional / Rotating
     // false = Standard / Fixed
     private var professionalMode = true
@@ -108,6 +112,31 @@ class RotatingDashboardView @JvmOverloads constructor(
 
         invalidate()
     }
+    fun refreshLicenseState() {
+        invalidate()
+    }
+
+    fun setOnLockedItemClickListener(listener: (() -> Unit)?) {
+        onLockedItemClick = listener
+    }
+
+    private var onConnectionBlockedItemClick: (() -> Unit)? = null
+
+    fun setOnConnectionBlockedItemClickListener(listener: (() -> Unit)?) {
+        onConnectionBlockedItemClick = listener
+    }
+
+    internal fun performItemClick(item: DashboardItem) {
+        when {
+            !hasLicenseAccess(item) -> onLockedItemClick?.invoke()
+            !isConnectionAllowed(item) -> onConnectionBlockedItemClick?.invoke()
+            else -> item.onClick()
+        }
+    }
+
+    private fun hasLicenseAccess(item: DashboardItem): Boolean =
+        com.example.yadra.license.DiagEntitlement.canAccess(
+            item.id, com.example.yadra.license.LicenseManager.isActive(context))
 
     // ==================================================
     // ECU CONNECTION STATE
@@ -173,13 +202,16 @@ class RotatingDashboardView @JvmOverloads constructor(
     private fun isItemEnabled(
         item: DashboardItem
     ): Boolean {
+        return hasLicenseAccess(item) && isConnectionAllowed(item)
+    }
 
+    private fun isConnectionAllowed(item: DashboardItem): Boolean {
         // ==================================================
         // UNKNOWN ECU CONNECTED
         // ==================================================
 
         if (
-            item.title == "ECU" &&
+            item.id == com.example.yadra.license.DashboardItemId.ECU &&
             EcuRuntimeState.mode ==
             EcuMode.UNKNOWN &&
             EcuRuntimeState.connected
@@ -193,7 +225,7 @@ class RotatingDashboardView @JvmOverloads constructor(
         // ==================================================
 
         if (
-            item.title == "Unknown ECU"
+            item.id == com.example.yadra.license.DashboardItemId.UNKNOWN_ECU
         ) {
 
             return !isAnyEcuConnected()
@@ -1525,12 +1557,7 @@ class RotatingDashboardView @JvmOverloads constructor(
                     val item =
                         items[clickedIndex]
 
-                    if (
-                        isItemEnabled(item)
-                    ) {
-
-                        item.onClick()
-                    }
+                    performItemClick(item)
                 }
             }
 
@@ -1715,12 +1742,7 @@ class RotatingDashboardView @JvmOverloads constructor(
                                 // شده باشد، اینجا هم کلیک مسدود می‌شود.
                                 // ==========================================
 
-                                if (
-                                    isItemEnabled(item)
-                                ) {
-
-                                    item.onClick()
-                                }
+                                performItemClick(item)
                             }
                         }
                     }

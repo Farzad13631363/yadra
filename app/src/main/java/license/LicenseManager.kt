@@ -3,136 +3,37 @@ package com.example.yadra.license
 import android.content.Context
 
 object LicenseManager {
+    // A process-local server proof, never restored from SharedPreferences.
+    @Volatile private var verified: LicenseInfo? = null
 
-    private const val PREFS_NAME =
-        "yadra_license"
+    private val listeners = java.util.concurrent.CopyOnWriteArraySet<() -> Unit>()
+    fun addVerificationListener(listener: () -> Unit) { listeners.add(listener) }
+    fun removeVerificationListener(listener: () -> Unit) { listeners.remove(listener) }
+    private fun notifyVerificationChanged() { listeners.forEach { it() } }
 
-    private const val KEY_LICENSE_ID =
-        "license_id"
-
-    private const val KEY_DEVICE_ID =
-        "device_id"
-
-    private const val KEY_TOKEN =
-        "activation_token"
-
-    private const val KEY_STATUS =
-        "status"
-
-    private const val KEY_EXPIRES_AT =
-        "expires_at"
-
-    fun saveLicense(
-        context: Context,
-        licenseInfo: LicenseInfo
-    ) {
-
-        context
-            .getSharedPreferences(
-                PREFS_NAME,
-                Context.MODE_PRIVATE
-            )
-            .edit()
-            .putString(
-                KEY_LICENSE_ID,
-                licenseInfo.licenseId
-            )
-            .putString(
-                KEY_DEVICE_ID,
-                licenseInfo.deviceId
-            )
-            .putString(
-                KEY_TOKEN,
-                licenseInfo.activationToken
-            )
-            .putString(
-                KEY_STATUS,
-                licenseInfo.status.name
-            )
-            .putString(
-                KEY_EXPIRES_AT,
-                licenseInfo.expiresAt
-            )
+    internal fun saveVerifiedLicense(context: Context, license: LicenseInfo) {
+        verified = license.takeIf {
+            DiagEntitlement.isVerifiedDiagActive(it, DeviceIdentity.getAndroidIdHash(context))
+        }
+        context.getSharedPreferences("yadra_license", Context.MODE_PRIVATE).edit()
+            .putString("license_id", license.licenseId)
+            .putString("device_id", license.deviceId)
+            .putString("status", license.status.name)
+            .putString("activation_token", "")
             .apply()
+        notifyVerificationChanged()
     }
 
-    fun loadLicense(
-        context: Context
-    ): LicenseInfo {
+    fun invalidateVerification() { verified = null; notifyVerificationChanged() }
 
-        val preferences =
-            context.getSharedPreferences(
-                PREFS_NAME,
-                Context.MODE_PRIVATE
-            )
-
-        val statusName =
-            preferences.getString(
-                KEY_STATUS,
-                LicenseStatus.INACTIVE.name
-            )
-
-        val status =
-            try {
-                LicenseStatus.valueOf(
-                    statusName
-                        ?: LicenseStatus.INACTIVE.name
-                )
-            } catch (_: Exception) {
-                LicenseStatus.INACTIVE
-            }
-
-        return LicenseInfo(
-            licenseId =
-                preferences.getString(
-                    KEY_LICENSE_ID,
-                    ""
-                ) ?: "",
-
-            deviceId =
-                preferences.getString(
-                    KEY_DEVICE_ID,
-                    ""
-                ) ?: "",
-
-            activationToken =
-                preferences.getString(
-                    KEY_TOKEN,
-                    ""
-                ) ?: "",
-
-            status = status,
-
-            expiresAt =
-                preferences.getString(
-                    KEY_EXPIRES_AT,
-                    ""
-                ) ?: ""
-        )
+    fun loadLicense(context: Context): LicenseInfo {
+        verified?.let { return it }
+        val prefs = context.getSharedPreferences("yadra_license", Context.MODE_PRIVATE)
+        return LicenseInfo(licenseId = prefs.getString("license_id", "") ?: "",
+            deviceId = prefs.getString("device_id", "") ?: "")
     }
 
-    fun clearLicense(
-        context: Context
-    ) {
-
-        context
-            .getSharedPreferences(
-                PREFS_NAME,
-                Context.MODE_PRIVATE
-            )
-            .edit()
-            .clear()
-            .apply()
-    }
-
-    fun isActive(
-        context: Context
-    ): Boolean {
-
-        val license =
-            loadLicense(context)
-
-        return license.status ==
-                LicenseStatus.ACTIVE
-    }
+    fun isActive(context: Context): Boolean = DiagEntitlement.isVerifiedDiagActive(
+        verified, DeviceIdentity.getAndroidIdHash(context)
+    )
 }
